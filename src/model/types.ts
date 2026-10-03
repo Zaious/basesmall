@@ -11,8 +11,11 @@ export type GameStatus =
   | 'pregame'
   | 'live'
   | 'delayed'
+  /** A manager challenge or umpire review is in progress. */
+  | 'review'
   | 'suspended'
   | 'postponed'
+  | 'cancelled'
   | 'final'
   | 'unknown';
 
@@ -108,6 +111,8 @@ export interface PitcherState extends PlayerRef {
 export interface GameState {
   gamePk: number;
   status: GameStatus;
+  /** League's own status text, e.g. "Delayed: Rain"; the UI translates the parts it knows. */
+  statusDetail?: string;
   teams: Record<Side, TeamRef>;
   inning: number;
   half: Half;

@@ -32,18 +32,39 @@ for (const fx of FIXTURES) {
       expect(last.state.status).toBe('final');
     });
 
-    it('final runs, hits and errors match the official linescore', () => {
+    // The last play-derived entry, before the final entry is reconciled with the official linescore.
+    const derived = timeline.filter((e) => e.event >= 0).at(-1)?.state;
+
+    it('runs and hits derived from the plays match the official linescore', () => {
       for (const s of SIDES) {
-        expect({ side: s, runs: final!.score[s], hits: final!.hits[s], errors: final!.errors[s] })
-          .toEqual({ side: s, ...pick(off!.liveData.linescore.teams[s], ['runs', 'hits', 'errors']) });
+        expect({ side: s, runs: derived!.score[s], hits: derived!.hits[s] })
+          .toEqual({ side: s, ...pick(off!.liveData.linescore.teams[s], ['runs', 'hits']) });
       }
     });
 
-    it('runs per inning match the official linescore', () => {
+    it('errors derived from the plays never exceed the official count', () => {
+      // Some errors (a dropped foul fly) leave no trace in the plays; the final entry fixes them.
+      for (const s of SIDES) expect(derived!.errors[s]).toBeLessThanOrEqual(off!.liveData.linescore.teams[s].errors);
+    });
+
+    it('runs per inning derived from the plays match every inning the official linescore counts', () => {
       const innings = off!.liveData.linescore.innings;
       for (const s of SIDES) {
-        const want = innings.map((i) => i[s]?.runs ?? null);
-        expect(final!.linescore[s].slice(0, want.length)).toEqual(want);
+        const got = innings.map((i, n) => (i[s]?.runs === undefined ? 'skip' : derived!.linescore[s][n] ?? null));
+        const want = innings.map((i) => (i[s]?.runs === undefined ? 'skip' : i[s]!.runs));
+        expect(got).toEqual(want);
+      }
+    });
+
+    it('the final entry carries the official runs, hits, errors and runs per inning', () => {
+      const innings = off!.liveData.linescore.innings;
+      for (const s of SIDES) {
+        expect(pick(final!, ['score', 'hits', 'errors'])).toEqual({
+          score: { away: off!.liveData.linescore.teams.away.runs, home: off!.liveData.linescore.teams.home.runs },
+          hits: { away: off!.liveData.linescore.teams.away.hits, home: off!.liveData.linescore.teams.home.hits },
+          errors: { away: off!.liveData.linescore.teams.away.errors, home: off!.liveData.linescore.teams.home.errors },
+        });
+        expect(final!.linescore[s]).toEqual(innings.map((i) => i[s]?.runs ?? null));
       }
     });
 

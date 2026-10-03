@@ -8,9 +8,7 @@ import type {
   Base,
   GameEvent,
   GameState,
-  GameStatus,
   Hand,
-  PitchCall,
   PitchMark,
   PlayerRef,
   RunnerFrom,
@@ -20,43 +18,16 @@ import type {
   TimelineEntry,
 } from '../../model/types.ts';
 import type { MlbFeed, MlbPlay, MlbPlayEvent } from './feed-types.ts';
+import {
+  AT_BAT_EVENTS, AUTOMATIC_CALL, BASERUNNING_EVENTS, HIT_EVENTS, PITCH_CALL, mapStatus,
+} from './codes.ts';
+
+export { mapStatus };
 
 const BASES: readonly Base[] = ['1B', '2B', '3B'];
-const HITS = new Set(['single', 'double', 'triple', 'home_run']);
-/** Plate-appearance results that are official at-bats. Walks, HBP, sacrifices,
- *  interference and outs made on the bases while the batter is up are not. */
-const AT_BATS = new Set([
-  'single', 'double', 'triple', 'home_run',
-  'field_out', 'force_out', 'fielders_choice', 'fielders_choice_out', 'field_error',
-  'strikeout', 'strikeout_double_play', 'strikeout_triple_play',
-  'grounded_into_double_play', 'grounded_into_triple_play', 'double_play', 'triple_play',
-]);
-/** Non-pitch events worth a timeline entry even when no runner moves. */
-const KEPT_ACTIONS = /^(runner_placed|pitching_substitution|stolen_base|caught_stealing|pickoff|wild_pitch|passed_ball|balk|other_advance|defensive_indiff|error)/;
-
-const CALLS: Record<string, PitchCall> = {
-  B: 'ball', '*B': 'ball', P: 'ball', I: 'ball', V: 'ball', VB: 'ball',
-  C: 'calledStrike', A: 'calledStrike', AC: 'calledStrike',
-  S: 'swingingStrike', W: 'swingingStrike', M: 'swingingStrike', Q: 'swingingStrike', T: 'swingingStrike',
-  F: 'foul', L: 'foul', R: 'foul',
-  X: 'inPlay', D: 'inPlay', E: 'inPlay',
-  H: 'hitByPitch',
-};
-
 const other = (s: Side): Side => (s === 'away' ? 'home' : 'away');
 const isBase = (b: string | null | undefined): b is Base => b === '1B' || b === '2B' || b === '3B';
 const hand = (code: string | undefined): Hand => (code === 'L' ? 'L' : 'R');
-
-export function mapStatus(status: MlbFeed['gameData']['status']): GameStatus {
-  const abstract = status.abstractGameState ?? '';
-  const detailed = (status.detailedState ?? '').toLowerCase();
-  if (detailed.includes('postponed')) return 'postponed';
-  if (detailed.includes('suspended')) return 'suspended';
-  if (abstract === 'Final') return 'final';
-  if (abstract === 'Live') return detailed.includes('delay') ? 'delayed' : 'live';
-  if (abstract === 'Preview') return detailed.includes('pre-game') || detailed.includes('warmup') ? 'pregame' : 'scheduled';
-  return 'unknown';
-}
 
 export function teamsOf(feed: MlbFeed): Record<Side, TeamRef> {
   const t = feed.gameData.teams;
@@ -71,6 +42,7 @@ export function initialState(feed: MlbFeed): GameState {
   return {
     gamePk: feed.gamePk,
     status: mapStatus(feed.gameData.status),
+    ...(feed.gameData.status.detailedState ? { statusDetail: feed.gameData.status.detailedState } : {}),
     teams: teamsOf(feed),
     inning: 1,
     half: 'top',
@@ -89,7 +61,7 @@ export function initialState(feed: MlbFeed): GameState {
 function pitchMark(e: MlbPlayEvent, n: number): PitchMark {
   const code = e.details?.call?.code ?? e.details?.code ?? '';
   const pd = e.pitchData;
-  const mark: PitchMark = { n, call: CALLS[code] ?? 'other', callCode: code };
+  const mark: PitchMark = { n, call: PITCH_CALL[code] ?? 'other', callCode: code };
   const set = <K extends keyof PitchMark>(k: K, v: PitchMark[K] | undefined) => { if (v !== undefined && v !== null) mark[k] = v; };
   set('x', pd?.coordinates?.pX);
   set('z', pd?.coordinates?.pZ);
@@ -163,19 +135,19 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
     const batter = ref(play.matchup.batter.id, play.matchup.batter.fullName);
     const atBat: PitchMark[] = [];
     const lastIndex = play.playEvents.at(-1)?.index;
-    let prevCount = { balls: 0, strikes: 0 };
 
     for (const e of play.playEvents) {
       const kind = e.details?.eventType ?? '';
       const moves = play.runners.filter((r) => r.details.playIndex === e.index);
-      const countChanged = e.count.balls !== prevCount.balls || e.count.strikes !== prevCount.strikes;
-      const automatic = e.type === 'no_pitch' && countChanged && (e.details?.isBall || e.details?.isStrike);
+      const code = e.details?.call?.code ?? e.details?.code ?? '';
+      const automatic = !e.isPitch ? AUTOMATIC_CALL[code] : undefined;
       const isLast = play.about.isComplete && e.index === lastIndex;
       const replaced = e.replacedPlayer?.id;
       const pinchRunner = kind === 'offensive_substitution' && e.player !== undefined && replaced !== undefined
         && [...bases.values()].includes(replaced);
-      const keep = e.isPitch || automatic || pinchRunner || KEPT_ACTIONS.test(kind) || moves.length > 0 || isLast;
-      prevCount = { balls: e.count.balls, strikes: e.count.strikes };
+      const baserunning = BASERUNNING_EVENTS.has(kind);
+      const keep = e.isPitch || automatic !== undefined || pinchRunner || baserunning
+        || kind === 'runner_placed' || kind === 'pitching_substitution' || moves.length > 0 || isLast;
       if (!keep) continue;
 
       const events: GameEvent[] = [];
@@ -201,7 +173,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           bases.set(b, e.player.id);
           events.push({ type: 'runnerPlaced', runner: ref(e.player.id), base: b, replaces: ref(replaced) });
         }
-      } else if (!e.isPitch && !automatic && KEPT_ACTIONS.test(kind)) {
+      } else if (baserunning) {
         const who = e.player?.id ?? moves[0]?.details.runner.id;
         events.push(who !== undefined ? { type: 'baserunning', kind, runner: ref(who) } : { type: 'baserunning', kind });
       }
@@ -214,7 +186,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
         const ball = e.details?.isInPlay ? battedBall(e) : undefined;
         if (ball) events.push({ type: 'ballInPlay', ball });
       } else if (automatic) {
-        events.push({ type: 'automaticCall', call: e.details?.isBall ? 'ball' : 'strike', description: e.details?.description ?? '' });
+        events.push({ type: 'automaticCall', call: automatic, description: e.details?.description ?? '' });
       }
 
       // Runner movements. A runner can have several segments in one event (1B->2B, then
@@ -259,8 +231,8 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
       let outs = e.count.outs;
       if (isLast) {
         const result = play.result.eventType ?? 'unknown';
-        if (AT_BATS.has(result)) today.ab++;
-        if (HITS.has(result)) { today.h++; hits[bat]++; }
+        if (AT_BAT_EVENTS.has(result)) today.ab++;
+        if (HIT_EVENTS.has(result)) { today.h++; hits[bat]++; }
         line.set(batter.id, today);
         // Pitch-level outs are recorded before the play's outs; the play-level count is after.
         outs = play.count.outs;
@@ -306,18 +278,17 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
 
   repairTimestamps(entries);
   const status = mapStatus(feed.gameData.status);
+  const detail = feed.gameData.status.detailedState;
   const last = entries.at(-1);
   if (last) {
-    last.state.status = status === 'final' ? 'live' : status;
     if (status === 'final') {
-      const winner: Side | 'tie' = score.away === score.home ? 'tie' : score.away > score.home ? 'away' : 'home';
-      entries.push({
-        t: last.t,
-        play: last.play,
-        event: -1,
-        events: [{ type: 'gameEnd', winner, score: { ...score } }],
-        state: { ...last.state, status: 'final' },
-      });
+      last.state.status = 'live';
+      const end = reconcile({ ...last.state, status: 'final', ...(detail ? { statusDetail: detail } : {}) }, feed);
+      const winner: Side | 'tie' = end.score.away === end.score.home ? 'tie' : end.score.away > end.score.home ? 'away' : 'home';
+      entries.push({ t: last.t, play: last.play, event: -1, events: [{ type: 'gameEnd', winner, score: { ...end.score } }], state: end });
+    } else {
+      // Live: the last entry is "now", and the feed's linescore is the authority for now.
+      last.state = reconcile({ ...last.state, status, ...(detail ? { statusDetail: detail } : {}) }, feed);
     }
   }
   return entries;
@@ -341,6 +312,30 @@ export function repairTimestamps(entries: { t: number }[]): number {
     repaired += i - j;
   }
   return repaired;
+}
+
+/**
+ * Overwrite runs, hits, errors and runs per inning with the feed's own linescore.
+ * Play-by-play cannot see everything: some errors (a dropped foul fly) have no play, and when
+ * a game is called mid-inning the unfinished half does not count. Applied only to the entry
+ * that represents the feed's present moment.
+ */
+export function reconcile(state: GameState, feed: MlbFeed): GameState {
+  const ls = feed.liveData.linescore;
+  if (!ls?.teams) return state;
+  const sides: Side[] = ['away', 'home'];
+  const pick = (k: 'runs' | 'hits' | 'errors', fallback: Record<Side, number>) =>
+    Object.fromEntries(sides.map((s) => [s, ls.teams?.[s]?.[k] ?? fallback[s]])) as Record<Side, number>;
+  const innings = ls.innings ?? [];
+  return {
+    ...state,
+    score: pick('runs', state.score),
+    hits: pick('hits', state.hits),
+    errors: pick('errors', state.errors),
+    linescore: innings.length
+      ? Object.fromEntries(sides.map((s) => [s, innings.map((i) => i[s]?.runs ?? null)])) as Record<Side, (number | null)[]>
+      : state.linescore,
+  };
 }
 
 function snapshotLinescore(runs: Record<Side, (number | null)[]>): Record<Side, (number | null)[]> {

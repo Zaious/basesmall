@@ -52,6 +52,10 @@ Want to make your own look? See [styles/](styles/): every style is one file, and
 - No team logos, uniforms or league marks are used. Teams are shown by name, abbreviation and colour. Team colour values come from [colorr](https://github.com/lobsterbush/colorr) (MIT); see [NOTICE](styles/team-colors/NOTICE.md).
 - Basesmall is free and will stay free: no ads and no paid features.
 
+## Support
+
+Basesmall is free and stays free. If it keeps you company at work, you can [buy me a coffee](https://buymeacoffee.com/zaious).
+
 ## License
 
 [MIT](LICENSE), for the code in this repository. MLB data is not covered.

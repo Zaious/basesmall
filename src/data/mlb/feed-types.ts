@@ -132,6 +132,7 @@ export interface MlbFeed {
     linescore?: {
       scheduledInnings?: number;
       teams?: Record<'away' | 'home', { runs?: number; hits?: number; errors?: number }>;
+      /** Runs is absent for a half-inning that has not been played or did not count. */
       innings?: { num: number; away?: { runs?: number }; home?: { runs?: number } }[];
     };
   };
