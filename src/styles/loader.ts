@@ -30,7 +30,8 @@ export function loadStyles(files: readonly StyleFile[]): LoadedStyles {
   const problems: string[] = [];
   for (const f of files) {
     let parsed: unknown;
-    try { parsed = JSON.parse(f.text); } catch { problems.push(`${f.name}: not valid JSON`); continue; }
+    // Windows editors may save a byte-order mark, which JSON.parse rejects.
+    try { parsed = JSON.parse(f.text.replace(/^﻿/, '')); } catch { problems.push(`${f.name}: not valid JSON`); continue; }
     const errs = validateStyle(parsed);
     if (errs.length) { problems.push(...errs.map((e) => `${f.name}: ${e}`)); continue; }
     const s = parsed as StyleManifest;

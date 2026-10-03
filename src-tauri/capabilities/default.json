@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the main window's web view may do.",
+  "description": "What the main window's web view may do. It also creates and places the notification windows.",
   "windows": [
     "main"
   ],
@@ -10,8 +10,19 @@
     "core:window:allow-start-dragging",
     "core:window:allow-start-resize-dragging",
     "core:window:allow-set-size",
+    "core:window:allow-set-position",
     "core:window:allow-show",
+    "core:window:allow-hide",
     "core:window:allow-set-title",
-    "window-state:default"
+    "core:webview:allow-create-webview-window",
+    "window-state:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://buymeacoffee.com/zaious" },
+        { "url": "https://github.com/Zaious/basesmall" },
+        { "url": "https://github.com/Zaious/basesmall/*" }
+      ]
+    }
   ]
 }

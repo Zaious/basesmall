@@ -4,6 +4,7 @@
 
 import type { GameEvent, GameStatus, Half, Hand, PitchMark } from '../model/types.ts';
 import type { Tier } from '../render/tiers.ts';
+import type { NotifyKind } from '../settings/schema.ts';
 
 export type Lang = 'zh-Hant' | 'en';
 export const LANGS: readonly Lang[] = ['zh-Hant', 'en'];
@@ -63,6 +64,30 @@ interface Strings {
   feet(n: number): string;
   /** Size tiers of the main window. */
   tier: Record<Tier, string>;
+  /** Notifications: the event names in settings, and notice titles. */
+  notify: {
+    kinds: Record<NotifyKind, string>;
+    run: string; hr: string; hit: string; walk: string; k: string; out: string; sb: string; pchange: string;
+    halfOver(inning: string): string;
+    gameStart: string;
+    gameEnd: string;
+    replay: string;
+    close: string;
+  };
+  /** The settings screen. */
+  set: {
+    title: string; done: string;
+    team: string; change: string;
+    background: string; bg: Record<'solid' | 'semi' | 'clear', string>;
+    language: string; auto: string;
+    tabs: string;
+    sound: string; soundOn: string; volume: string; hit: string; homeRun: string; preview: string; soundBlocked: string;
+    notify: string; mode: string; modes: Record<'toast' | 'marquee' | 'both' | 'off', string>;
+    spot: string; spots: Record<'top' | 'bottom' | 'bar', string>;
+    events: string; onlyMine: string;
+    replay: string; pace: string; paces: Record<'compact' | 'real' | 'fixed' | 'results', string>; showScores: string;
+    about: string; aboutText: string; support: string; source: string; stylesFolder: string;
+  };
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
     'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed' |
@@ -137,6 +162,27 @@ const zh: Strings = {
   throws: (h) => (h === 'L' ? '左投' : '右投'),
   feet: (n) => `${n} 呎`,
   tier: { dot: '點', bar: '條', field: '場', full: '全' },
+  notify: {
+    kinds: { run: '得分', hr: '全壘打', hit: '安打', walk: '保送／觸身', k: '三振', out: '出局數變化', sb: '盜壘', pchange: '換投', half: '半局結束', game: '開賽／終場' },
+    run: '得分', hr: '全壘打', hit: '安打', walk: '上壘', k: '三振', out: '出局', sb: '盜壘', pchange: '換投',
+    halfOver: (inning) => `${inning}結束`,
+    gameStart: '開賽', gameEnd: '終場', replay: '重播', close: '關閉通知',
+  },
+  set: {
+    title: '設定', done: '完成',
+    team: '主隊', change: '更改',
+    background: '背景', bg: { solid: '實底', semi: '半透明', clear: '全透明' },
+    language: '語言', auto: '跟隨系統',
+    tabs: '頁籤',
+    sound: '音效', soundOn: '開啟音效', volume: '音量', hit: '安打', homeRun: '全壘打', preview: '試聽',
+    soundBlocked: '系統還不讓這個視窗發聲，點一下視窗任何地方就好',
+    notify: '通知', mode: '方式', modes: { toast: '右下角', marquee: '跑馬燈', both: '兩者', off: '關閉' },
+    spot: '跑馬燈位置', spots: { top: '螢幕上緣', bottom: '螢幕下緣', bar: '貼控制條' },
+    events: '要通知的事件', onlyMine: '只通知我追蹤的球隊',
+    replay: '重播', pace: '節奏', paces: { compact: '緊湊', real: '原速', fixed: '每球 5 秒', results: '只看結果' }, showScores: '選場時顯示比分',
+    about: '關於', aboutText: '非官方的球迷專案，與 MLB、MLBAM、球員工會或任何球隊無關。比賽資料來自 MLB Stats API，由你的電腦直接取得，僅供個人、非商業使用。',
+    support: '請我喝杯咖啡', source: '原始碼', stylesFolder: '自訂風格資料夾',
+  },
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
     reconnecting: '連線中斷，重試中', replay: '重播', back: '回清單', pickGame: '選一場比賽',
@@ -212,6 +258,27 @@ const en: Strings = {
   throws: (h) => (h === 'L' ? 'LHP' : 'RHP'),
   feet: (n) => `${n} ft`,
   tier: { dot: 'Dot', bar: 'Bar', field: 'Field', full: 'Full' },
+  notify: {
+    kinds: { run: 'Runs', hr: 'Home runs', hit: 'Hits', walk: 'Walks / HBP', k: 'Strikeouts', out: 'Outs', sb: 'Stolen bases', pchange: 'Pitching changes', half: 'End of half-inning', game: 'Start / final' },
+    run: 'Run', hr: 'Home run', hit: 'Hit', walk: 'On base', k: 'Strikeout', out: 'Out', sb: 'Stolen base', pchange: 'Pitching change',
+    halfOver: (inning) => `End of ${inning}`,
+    gameStart: 'First pitch', gameEnd: 'Final', replay: 'Replay', close: 'Close notification',
+  },
+  set: {
+    title: 'Settings', done: 'Done',
+    team: 'My team', change: 'Change',
+    background: 'Background', bg: { solid: 'Solid', semi: 'Translucent', clear: 'Clear' },
+    language: 'Language', auto: 'System',
+    tabs: 'Tabs',
+    sound: 'Sound', soundOn: 'Sound on', volume: 'Volume', hit: 'Hit', homeRun: 'Home run', preview: 'Play',
+    soundBlocked: 'The system wants a click before this window makes sound: click anywhere in it',
+    notify: 'Notifications', mode: 'Show as', modes: { toast: 'Corner', marquee: 'Ticker', both: 'Both', off: 'Off' },
+    spot: 'Ticker position', spots: { top: 'Top of screen', bottom: 'Bottom of screen', bar: 'Under the window' },
+    events: 'Notify me about', onlyMine: 'Only my team',
+    replay: 'Replay', pace: 'Pace', paces: { compact: 'Compact', real: 'Real time', fixed: '5 s a pitch', results: 'Results only' }, showScores: 'Show scores when picking',
+    about: 'About', aboutText: 'An unofficial fan project, not affiliated with MLB, MLBAM, the MLBPA or any team. Game data comes from the MLB Stats API, fetched by your own computer, for personal, non-commercial use.',
+    support: 'Buy me a coffee', source: 'Source code', stylesFolder: 'Custom styles folder',
+  },
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',
     reconnecting: 'Connection lost, retrying', replay: 'Replay', back: 'Back', pickGame: 'Pick a game',

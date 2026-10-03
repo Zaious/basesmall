@@ -140,6 +140,11 @@ describe('style loader', () => {
     expect(Object.keys(r.styles.at(-1)!)).not.toContain('extra');
   });
 
+  it('reads a style file saved with a byte-order mark', () => {
+    const f = file('bom');
+    expect(loadStyles([{ ...f, text: `﻿${f.text}` }]).problems).toEqual([]);
+  });
+
   it('skips broken files and says why', () => {
     const r = loadStyles([
       { name: 'bad.json', text: '{ nope' },

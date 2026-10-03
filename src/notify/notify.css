@@ -1,0 +1,52 @@
+/* Notification windows: the corner card and the ticker. Colours arrive from the main window's style. */
+:root {
+  --background: #15171C; --panel: #1B1E24; --border: #2A2E37; --text: #E8EAEE; --muted: #A0A6B1;
+  --accent: #E8B04A; --ball: #8EC1F0; --strike: #D9643F; --out: #ECE8DF;
+  --font: 'Segoe UI Variable', 'Segoe UI', 'Microsoft JhengHei UI', 'PingFang TC', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { color: var(--text); font: 12px/1.35 var(--font); user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; padding: 0; }
+.x { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); flex: 0 0 24px; }
+.x:hover { background: var(--border); color: var(--text); }
+.ab { color: var(--muted); }
+.colon { color: color-mix(in srgb, var(--muted) 60%, transparent); margin: 0 3px; }
+.ab:first-child { margin-right: 5px; } .ab:last-child { margin-left: 5px; }
+.replay { color: var(--accent); }
+
+/* toast: newest card at the bottom, the older one dimmed */
+body.toast #root { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 4px; }
+.card { display: flex; gap: 12px; align-items: flex-start; padding: 12px 8px 12px 12px; border-radius: 10px;
+  background: var(--panel); border: 1px solid color-mix(in srgb, var(--border) 80%, var(--muted)); box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+  animation: card-in .22s ease-out; }
+.card.old { opacity: .72; }
+@keyframes card-in { from { transform: translateY(8px); opacity: 0; } }
+.card .mark { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; display: grid; place-items: center; color: var(--background); }
+.card .text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.card .head { display: flex; align-items: baseline; gap: 8px; }
+.card .title { font-weight: 600; white-space: nowrap; }
+.card .score { font: 11px var(--mono); color: color-mix(in srgb, var(--text) 85%, var(--muted)); white-space: nowrap; }
+.card .detail { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mark.accent { background: var(--accent); }
+.mark.out { background: var(--out); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--out) 70%, #000); }
+.mark.ball { background: var(--ball); }
+.mark.muted { background: color-mix(in srgb, var(--muted) 70%, transparent); }
+
+/* marquee: score on the left, the latest plays scrolling past */
+body.marquee #root { height: 100%; }
+.bar { height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 4px 0 10px; border-radius: 8px;
+  background: var(--background); border: 1px solid var(--border); }
+.bar .sb { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.bar .score { font: 600 12px var(--mono); }
+.bar .sit { font-size: 11px; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+.bar .sep { width: 1px; height: 16px; background: var(--border); flex: 0 0 1px; }
+.ticker { flex: 1; min-width: 0; overflow: hidden; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
+.track { display: flex; gap: 28px; white-space: nowrap; width: max-content; animation: ticker 28s linear infinite; }
+.track.still { animation: none; }
+.track:hover { animation-play-state: paused; }
+.item { display: inline-flex; align-items: center; gap: 6px; }
+.item .mark { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .track { animation: none; } }

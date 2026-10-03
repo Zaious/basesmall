@@ -130,6 +130,36 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .chooser .team[aria-pressed='true'] { background: var(--border); }
 .chooser .none { align-self: flex-start; font-family: var(--font); font-weight: 400; color: var(--muted); }
 
+/* ---------- settings ---------- */
+.settings { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.settings header { display: flex; align-items: center; gap: 6px; padding: 9px 12px 6px; }
+.settings .done { height: 24px; padding: 0 12px; border-radius: 12px; background: var(--border); color: var(--text); }
+.settings .body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; user-select: text; -webkit-user-select: text; }
+/* A scrolling column: rows keep their height instead of shrinking into each other. */
+.settings .body > * { flex-shrink: 0; }
+.settings h3 { margin: 10px 0 0; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+.settings .srow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 26px; }
+.settings .block { display: flex; flex-direction: column; gap: 6px; padding: 2px 0; }
+.settings .block .k { flex: none; }
+.settings .srow.off, .settings .block.off { opacity: .45; }
+.settings .k { flex: 0 0 92px; color: var(--muted); font-size: 12px; }
+.settings .v { font-weight: 600; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); }
+.seg button { height: 22px; padding: 0 9px; border-radius: 6px; color: var(--muted); font-size: 12px; }
+.seg button:hover { color: var(--text); }
+.seg button[aria-pressed='true'] { background: var(--border); color: var(--text); }
+.check { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
+.check input { accent-color: var(--accent); margin: 0; }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 5px 10px; padding-left: 4px; }
+.link { color: var(--accent); font-size: 12px; padding: 0 2px; }
+.link:hover { text-decoration: underline; }
+.settings input[type='range'] { flex: 1; min-width: 90px; accent-color: var(--accent); }
+.settings .note, .settings .about { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.settings .about b { color: var(--text); }
+.settings .note .mono { user-select: all; -webkit-user-select: all; }
+.row .score { font: 600 12px var(--mono); color: var(--muted); margin-left: auto; }
+.row .score + .when { margin-left: 8px; }
+
 /* ---------- strip above the game: tabs (clock, replay) left, controls right ---------- */
 /* Each tab closes on its own and none of it takes room from the game. */
 #tabs { position: absolute; top: 0; left: 14px; right: 14px; height: 20px; display: none; gap: 4px; align-items: flex-end; z-index: 2; }

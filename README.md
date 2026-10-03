@@ -6,7 +6,7 @@ A tiny, quiet desktop view of the game you can't watch.
 
 Basesmall is an unofficial desktop companion for following live MLB games. It sits in a corner of your screen and keeps your team's game going as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate, and which way the ball went. Enough to know what is happening at a glance, without video, without sound unless you want it, and without looking like you are watching sports.
 
-> **Status: early development.** There is no installer yet. On Windows the floating window works from source: live games and replays, four sizes, flat and 2.5D styles.
+> **Status: early development.** There is no installer yet. On Windows the floating window works from source: live games and replays, four sizes, flat and 2.5D styles, sound, settings and notifications.
 
 ## What it will do
 
@@ -24,7 +24,7 @@ Basesmall is an unofficial desktop companion for following live MLB games. It si
 - [x] **M1** Normalized game model and replay. Six recorded games are checked against MLB's own totals: runs, hits, errors, runs per inning, runners after every plate appearance, every pitcher's pitch count, and every batter's at-bats and hits.
 - [~] **M2** Floating window (Tauri, Windows first) and live data: working on Windows; live measurement pending
 - [x] **M3** The board: styles, team colours, size tiers, animation. A 12-inning game replayed in the app with every step's board checked against the official state: no mismatches, longest gap between animation frames 14.5 ms.
-- [ ] **M4** Sound and settings
+- [x] **M4** Sound, settings and notifications. Synthesized hit and home-run sounds (off by default), a settings screen saved to a file, and corner cards or a ticker for the plays you choose, which never take focus from what you are typing in.
 - [ ] **M5** League scoreboard, postseason, low-key mode
 - [ ] **M6** Installers and a guide to writing styles
 
@@ -43,7 +43,7 @@ npm run tauri build -- --no-bundle    # release binary in src-tauri/target/relea
 
 Open a game directly: `basesmall --game=<gamePk>` follows it live, `--mode=replay` replays a finished one.
 
-In a game, hover over the window for the controls. **⤢** steps through the four sizes (bar, field, full, dot), or drag the bottom-right corner. **◇** switches style.
+In a game, hover over the window for the controls. **⤢** steps through the four sizes (bar, field, full, dot), or drag the bottom-right corner. **◇** switches style. **⚙** opens settings (also in the game list and the tray menu). Settings are saved to `settings.json` in the app's config folder (on Windows, `%APPDATA%\io.github.zaious.basesmall\`).
 
 The fixture script sends a handful of requests, one at a time, and caches every response so re-runs stay offline. MLB responses are never committed.
 
