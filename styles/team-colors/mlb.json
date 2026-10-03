@@ -1,0 +1,621 @@
+{
+  "$comment": "Piece colours per MLB team. piece = first non-white colour in the source palette; alt = next colour that is clearly different (OKLab distance > 0.15), used when two teams clash. Edit piece/alt by hand if a team reads wrong on the board.",
+  "source": {
+    "name": "colorr 1.1.0, data-raw/current.json",
+    "url": "https://github.com/lobsterbush/colorr",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2017-2026 Charles Crabtree",
+    "upstream": "teamcolorcodes.com (per colorr provenance.json)",
+    "retrieved": "2026-10-03"
+  },
+  "teams": {
+    "ATH": {
+      "id": 133,
+      "name": "Athletics",
+      "piece": "#003831",
+      "alt": "#EFB21E",
+      "palette": [
+        {
+          "name": "Green",
+          "hex": "#003831"
+        },
+        {
+          "name": "Gold",
+          "hex": "#EFB21E"
+        },
+        {
+          "name": "Gray",
+          "hex": "#A2AAAD"
+        },
+        {
+          "name": "Green",
+          "hex": "#115740"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#FFCD00"
+        }
+      ]
+    },
+    "ATL": {
+      "id": 144,
+      "name": "Atlanta Braves",
+      "piece": "#CE1141",
+      "alt": "#13274F",
+      "palette": [
+        {
+          "name": "Scarlet",
+          "hex": "#CE1141"
+        },
+        {
+          "name": "Navy",
+          "hex": "#13274F"
+        },
+        {
+          "name": "Gold",
+          "hex": "#EAAA00"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "AZ": {
+      "id": 109,
+      "name": "Arizona Diamondbacks",
+      "piece": "#A71930",
+      "alt": "#E3D4AD",
+      "palette": [
+        {
+          "name": "Sedona Red",
+          "hex": "#A71930"
+        },
+        {
+          "name": "Sonoran Sand",
+          "hex": "#E3D4AD"
+        },
+        {
+          "name": "Black",
+          "hex": "#000000"
+        },
+        {
+          "name": "Teal",
+          "hex": "#30CED8"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "BAL": {
+      "id": 110,
+      "name": "Baltimore Orioles",
+      "piece": "#DF4601",
+      "alt": "#000000",
+      "palette": [
+        {
+          "name": "Orange",
+          "hex": "#DF4601"
+        },
+        {
+          "name": "Black",
+          "hex": "#000000"
+        }
+      ]
+    },
+    "BOS": {
+      "id": 111,
+      "name": "Boston Red Sox",
+      "piece": "#BD3039",
+      "alt": "#0C2340",
+      "palette": [
+        {
+          "name": "Red",
+          "hex": "#BD3039"
+        },
+        {
+          "name": "Blue",
+          "hex": "#0C2340"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "CHC": {
+      "id": 112,
+      "name": "Chicago Cubs",
+      "piece": "#0E3386",
+      "alt": "#CC3433",
+      "palette": [
+        {
+          "name": "Blue",
+          "hex": "#0E3386"
+        },
+        {
+          "name": "Red",
+          "hex": "#CC3433"
+        }
+      ]
+    },
+    "CIN": {
+      "id": 113,
+      "name": "Cincinnati Reds",
+      "piece": "#C6011F",
+      "alt": "#000000",
+      "palette": [
+        {
+          "name": "Red",
+          "hex": "#C6011F"
+        },
+        {
+          "name": "Black",
+          "hex": "#000000"
+        }
+      ]
+    },
+    "CLE": {
+      "id": 114,
+      "name": "Cleveland Guardians",
+      "piece": "#00385D",
+      "alt": "#E50022",
+      "palette": [
+        {
+          "name": "Navy Blue",
+          "hex": "#00385D"
+        },
+        {
+          "name": "Red",
+          "hex": "#E50022"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "COL": {
+      "id": 115,
+      "name": "Colorado Rockies",
+      "piece": "#333366",
+      "alt": "#C4CED4",
+      "palette": [
+        {
+          "name": "Rockies Purple",
+          "hex": "#333366"
+        },
+        {
+          "name": "Silver",
+          "hex": "#C4CED4"
+        },
+        {
+          "name": "Midnight Black",
+          "hex": "#131413"
+        }
+      ]
+    },
+    "CWS": {
+      "id": 145,
+      "name": "Chicago White Sox",
+      "piece": "#27251F",
+      "alt": "#C4CED4",
+      "palette": [
+        {
+          "name": "Black",
+          "hex": "#27251F"
+        },
+        {
+          "name": "Silver",
+          "hex": "#C4CED4"
+        }
+      ]
+    },
+    "DET": {
+      "id": 116,
+      "name": "Detroit Tigers",
+      "piece": "#0C2340",
+      "alt": "#FA4616",
+      "palette": [
+        {
+          "name": "Navy",
+          "hex": "#0C2340"
+        },
+        {
+          "name": "Orange",
+          "hex": "#FA4616"
+        }
+      ]
+    },
+    "HOU": {
+      "id": 117,
+      "name": "Houston Astros",
+      "piece": "#002D62",
+      "alt": "#EB6E1F",
+      "palette": [
+        {
+          "name": "Navy",
+          "hex": "#002D62"
+        },
+        {
+          "name": "Orange",
+          "hex": "#EB6E1F"
+        },
+        {
+          "name": "Light Orange",
+          "hex": "#F4911E"
+        }
+      ]
+    },
+    "KC": {
+      "id": 118,
+      "name": "Kansas City Royals",
+      "piece": "#004687",
+      "alt": "#BD9B60",
+      "palette": [
+        {
+          "name": "Royal Blue",
+          "hex": "#004687"
+        },
+        {
+          "name": "Gold",
+          "hex": "#BD9B60"
+        }
+      ]
+    },
+    "LAA": {
+      "id": 108,
+      "name": "Los Angeles Angels",
+      "piece": "#003263",
+      "alt": "#BA0021",
+      "palette": [
+        {
+          "name": "Midnight Blue",
+          "hex": "#003263"
+        },
+        {
+          "name": "Red",
+          "hex": "#BA0021"
+        },
+        {
+          "name": "Maroon",
+          "hex": "#862633"
+        },
+        {
+          "name": "Silver",
+          "hex": "#C4CED4"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "LAD": {
+      "id": 119,
+      "name": "Los Angeles Dodgers",
+      "piece": "#005A9C",
+      "alt": "#EF3E42",
+      "palette": [
+        {
+          "name": "Dodger Blue",
+          "hex": "#005A9C"
+        },
+        {
+          "name": "Red",
+          "hex": "#EF3E42"
+        },
+        {
+          "name": "Silver",
+          "hex": "#A5ACAF"
+        }
+      ]
+    },
+    "MIA": {
+      "id": 146,
+      "name": "Miami Marlins",
+      "piece": "#00A3E0",
+      "alt": "#EF3340",
+      "palette": [
+        {
+          "name": "Miami Blue",
+          "hex": "#00A3E0"
+        },
+        {
+          "name": "Caliente Red",
+          "hex": "#EF3340"
+        },
+        {
+          "name": "Slate Gray",
+          "hex": "#41748D"
+        },
+        {
+          "name": "Midnight Black",
+          "hex": "#000000"
+        }
+      ]
+    },
+    "MIL": {
+      "id": 158,
+      "name": "Milwaukee Brewers",
+      "piece": "#FFC52F",
+      "alt": "#12284B",
+      "palette": [
+        {
+          "name": "Yellow",
+          "hex": "#FFC52F"
+        },
+        {
+          "name": "Navy Blue",
+          "hex": "#12284B"
+        }
+      ]
+    },
+    "MIN": {
+      "id": 142,
+      "name": "Minnesota Twins",
+      "piece": "#002B5C",
+      "alt": "#D31145",
+      "palette": [
+        {
+          "name": "Twins Navy",
+          "hex": "#002B5C"
+        },
+        {
+          "name": "Scarlet Red",
+          "hex": "#D31145"
+        },
+        {
+          "name": "Kasota Gold",
+          "hex": "#B9975B"
+        }
+      ]
+    },
+    "NYM": {
+      "id": 121,
+      "name": "New York Mets",
+      "piece": "#002D72",
+      "alt": "#FF5910",
+      "palette": [
+        {
+          "name": "Blue",
+          "hex": "#002D72"
+        },
+        {
+          "name": "Orange",
+          "hex": "#FF5910"
+        }
+      ]
+    },
+    "NYY": {
+      "id": 147,
+      "name": "New York Yankees",
+      "piece": "#003087",
+      "alt": "#E4002C",
+      "palette": [
+        {
+          "name": "Blue",
+          "hex": "#003087"
+        },
+        {
+          "name": "Red",
+          "hex": "#E4002C"
+        },
+        {
+          "name": "Uniform Navy",
+          "hex": "#0C2340"
+        },
+        {
+          "name": "Uniform Gray",
+          "hex": "#C4CED3"
+        }
+      ]
+    },
+    "PHI": {
+      "id": 143,
+      "name": "Philadelphia Phillies",
+      "piece": "#E81828",
+      "alt": "#002D72",
+      "palette": [
+        {
+          "name": "Red",
+          "hex": "#E81828"
+        },
+        {
+          "name": "Blue",
+          "hex": "#002D72"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "PIT": {
+      "id": 134,
+      "name": "Pittsburgh Pirates",
+      "piece": "#27251F",
+      "alt": "#FDB827",
+      "palette": [
+        {
+          "name": "Black",
+          "hex": "#27251F"
+        },
+        {
+          "name": "Gold",
+          "hex": "#FDB827"
+        }
+      ]
+    },
+    "SD": {
+      "id": 135,
+      "name": "San Diego Padres",
+      "piece": "#2F241D",
+      "alt": "#FFC425",
+      "palette": [
+        {
+          "name": "Brown",
+          "hex": "#2F241D"
+        },
+        {
+          "name": "Gold",
+          "hex": "#FFC425"
+        }
+      ]
+    },
+    "SEA": {
+      "id": 136,
+      "name": "Seattle Mariners",
+      "piece": "#0C2C56",
+      "alt": "#005C5C",
+      "palette": [
+        {
+          "name": "Navy Blue",
+          "hex": "#0C2C56"
+        },
+        {
+          "name": "Northwest Green",
+          "hex": "#005C5C"
+        },
+        {
+          "name": "Silver",
+          "hex": "#C4CED4"
+        },
+        {
+          "name": "Red",
+          "hex": "#D50032"
+        }
+      ]
+    },
+    "SF": {
+      "id": 137,
+      "name": "San Francisco Giants",
+      "piece": "#FD5A1E",
+      "alt": "#27251F",
+      "palette": [
+        {
+          "name": "Orange",
+          "hex": "#FD5A1E"
+        },
+        {
+          "name": "Black",
+          "hex": "#27251F"
+        },
+        {
+          "name": "Beige",
+          "hex": "#EFD19F"
+        },
+        {
+          "name": "Gold",
+          "hex": "#AE8F6F"
+        }
+      ]
+    },
+    "STL": {
+      "id": 138,
+      "name": "St. Louis Cardinals",
+      "piece": "#C41E3A",
+      "alt": "#0C2340",
+      "palette": [
+        {
+          "name": "Cardinal Red",
+          "hex": "#C41E3A"
+        },
+        {
+          "name": "Navy",
+          "hex": "#0C2340"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#FEDB00"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "TB": {
+      "id": 139,
+      "name": "Tampa Bay Rays",
+      "piece": "#092C5C",
+      "alt": "#8FBCE6",
+      "palette": [
+        {
+          "name": "Navy Blue",
+          "hex": "#092C5C"
+        },
+        {
+          "name": "Columbia Blue",
+          "hex": "#8FBCE6"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#F5D130"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    },
+    "TEX": {
+      "id": 140,
+      "name": "Texas Rangers",
+      "piece": "#003278",
+      "alt": "#C0111F",
+      "palette": [
+        {
+          "name": "Blue",
+          "hex": "#003278"
+        },
+        {
+          "name": "Red",
+          "hex": "#C0111F"
+        }
+      ]
+    },
+    "TOR": {
+      "id": 141,
+      "name": "Toronto Blue Jays",
+      "piece": "#134A8E",
+      "alt": "#E8291C",
+      "palette": [
+        {
+          "name": "Blue",
+          "hex": "#134A8E"
+        },
+        {
+          "name": "Navy Blue",
+          "hex": "#1D2D5C"
+        },
+        {
+          "name": "Red",
+          "hex": "#E8291C"
+        }
+      ]
+    },
+    "WSH": {
+      "id": 120,
+      "name": "Washington Nationals",
+      "piece": "#AB0003",
+      "alt": "#14225A",
+      "palette": [
+        {
+          "name": "Red",
+          "hex": "#AB0003"
+        },
+        {
+          "name": "Navy Blue",
+          "hex": "#14225A"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF"
+        }
+      ]
+    }
+  }
+}

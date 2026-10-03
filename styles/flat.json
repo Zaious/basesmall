@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "id": "flat",
+  "name": { "en": "Flat", "zh-Hant": "平面" },
+  "author": "Basesmall",
+  "renderer": "flat",
+  "theme": {
+    "background": "#15171C",
+    "panel": "#1B1E24",
+    "border": "#2A2E37",
+    "text": "#E8EAEE",
+    "muted": "#A0A6B1",
+    "accent": "#E8B04A",
+    "ball": "#8EC1F0",
+    "strike": "#D9643F",
+    "out": "#ECE8DF"
+  },
+  "piece": { "shape": "disc", "thickness": 0, "rim": true, "shadow": "none" },
+  "board": { "fill": "#FFFFFF04", "lines": "#3A404B" }
+}

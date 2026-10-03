@@ -1,0 +1,6 @@
+# MLB API responses: test-only, not redistributed (DATA_SOURCE.md 7.2 item 4)
+fixtures/mlb/
+
+
+# dependencies
+node_modules/
