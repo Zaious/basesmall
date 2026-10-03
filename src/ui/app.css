@@ -37,11 +37,6 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .conn { width: 7px; height: 7px; border-radius: 50%; background: var(--strike); flex: 0 0 7px; }
 .status { color: var(--accent); }
 
-/* hover controls */
-.controls { position: absolute; top: 6px; right: 8px; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--border); opacity: 0; pointer-events: none; transition: opacity .15s; }
-#app:hover .controls { opacity: 1; pointer-events: auto; }
-.controls button { height: 22px; padding: 0 9px; border-radius: 11px; color: var(--muted); }
-.controls button:hover { color: var(--text); background: var(--border); }
 
 /* picker */
 .picker { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 8px 10px 6px; gap: 6px; }
@@ -61,8 +56,6 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 #grip { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 10; }
 #grip::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); opacity: .45; }
 
-/* controls are shown for a moment when a game opens, then on hover */
-#app.reveal .controls { opacity: 1; pointer-events: auto; }
 
 /* team chooser */
 .chooser { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-height: 0; overflow-y: auto; }
@@ -79,7 +72,6 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .empty.small { font-size: 11px; padding: 0 4px; }
 
 .clock { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
-.controls button[aria-pressed='false'] { opacity: .5; }
 
 /* two-line score block (prototype control bar) */
 .bar .sb { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
@@ -99,3 +91,17 @@ body.has-tabs #app { top: 20px; }
 #tabs .tab.accent { color: var(--accent); }
 #tabs .tab button { width: 16px; height: 16px; border-radius: 4px; padding: 0; line-height: 14px; color: var(--muted); opacity: .55; }
 #tabs .tab button:hover { opacity: 1; background: var(--border); color: var(--text); }
+
+/* controls live in the strip above the bar, right side, so they never cover the game.
+   Shown for a moment when a game opens, then on hover. */
+#tabs .grow { flex: 1; }
+#tabs .controls { display: inline-flex; align-items: flex-end; gap: 1px; height: 20px; padding: 0 3px; border-radius: 8px 8px 0 0;
+  border: 1px solid var(--border); border-bottom: 0; position: relative; top: 1px;
+  opacity: 0; pointer-events: none; transition: opacity .15s; }
+#tabs.bg-solid .controls { background: var(--background); }
+#tabs.bg-semi .controls { background: color-mix(in srgb, var(--background) 62%, transparent); }
+#tabs.bg-clear .controls { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+body:hover #tabs .controls, body.reveal #tabs .controls { opacity: 1; pointer-events: auto; }
+#tabs .controls button { height: 19px; padding: 0 6px; border-radius: 6px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+#tabs .controls button:hover { color: var(--text); background: var(--border); }
+#tabs .controls button[aria-pressed='false'] { opacity: .5; }

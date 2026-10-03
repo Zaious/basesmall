@@ -2,7 +2,7 @@
 // Runs in a plain browser too (without window controls), which is how the UI is checked headless.
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { LogicalSize, PhysicalPosition } from '@tauri-apps/api/dpi';
+import { LogicalSize } from '@tauri-apps/api/dpi';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { MlbLiveSource } from '../data/mlb/live-source.ts';
@@ -44,11 +44,11 @@ const DEFAULT_SIZE: Record<View, { w: number; h: number }> = {
 };
 /** Below this the picker and chooser cannot show a single row, so they never open smaller. */
 const LIST_MIN_HEIGHT = 200;
-/** Height of the tab strip above the score bar (clock, replay). Saved sizes exclude it. */
+/** Height of the strip above the score bar: tabs on the left (clock, replay), controls on the
+ *  right on hover. Always there in the game view, so nothing ever covers the bar. Saved sizes exclude it. */
 const TAB_H = 20;
 let view: View = 'picker';
 let programmaticResize = 0;
-let tabsShown = false;
 
 async function fitWindow(v: View): Promise<void> {
   view = v;
@@ -57,21 +57,9 @@ async function fitWindow(v: View): Promise<void> {
   try { size = { ...size, ...(JSON.parse(load(`size-${v}`) ?? 'null') ?? {}) }; } catch { /* keep default */ }
   if (v !== 'game') size = { w: Math.max(size.w, 320), h: Math.max(size.h, LIST_MIN_HEIGHT) };
   programmaticResize = Date.now();
-  await win.setSize(new LogicalSize(size.w, size.h + (v === 'game' && tabsShown ? TAB_H : 0)));
+  await win.setSize(new LogicalSize(size.w, size.h + (v === 'game' ? TAB_H : 0)));
   // The window starts hidden so it never flashes at the wrong size.
   await win.show();
-}
-
-/** Grow or shrink the window by the tab strip upwards, so the bar itself stays where it is on screen. */
-async function resizeForTabs(show: boolean): Promise<void> {
-  if (!win || view !== 'game') return;
-  const scale = await win.scaleFactor();
-  const size = (await win.innerSize()).toLogical(scale);
-  const pos = await win.outerPosition();
-  const dy = Math.round(TAB_H * scale) * (show ? -1 : 1);
-  programmaticResize = Date.now();
-  await win.setPosition(new PhysicalPosition(pos.x, pos.y + dy));
-  await win.setSize(new LogicalSize(size.width, size.height + (show ? TAB_H : -TAB_H)));
 }
 
 if (win) {
@@ -81,7 +69,7 @@ if (win) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       const size = (await win.innerSize()).toLogical(await win.scaleFactor());
-      const h = size.height - (view === 'game' && tabsShown ? TAB_H : 0);
+      const h = size.height - (view === 'game' ? TAB_H : 0);
       save(`size-${view}`, JSON.stringify({ w: Math.round(size.width), h: Math.round(h) }));
     }, 400);
   });
@@ -245,7 +233,8 @@ setInterval(() => { if (view === 'game' && mode === 'live' && tabOn.clock && sto
 
 function renderTabs(s: GameState | undefined): void {
   const items: string[] = [];
-  if (view === 'game' && s) {
+  const game = view === 'game';
+  if (game && s) {
     const time = elapsed(s);
     if (tabOn.clock && time) items.push(`<span class="tab" title="${esc(S.ui.clock)}">⏱ <span class="mono">${time}</span><button data-close="clock" aria-label="×">×</button></span>`);
     if (tabOn.replay && mode === 'replay') {
@@ -253,10 +242,8 @@ function renderTabs(s: GameState | undefined): void {
       items.push(`<span class="tab accent">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}<button data-close="replay" aria-label="×">×</button></span>`);
     }
   }
-  tabsEl.innerHTML = items.join('');
-  const show = items.length > 0;
-  document.body.classList.toggle('has-tabs', show);
-  if (show !== tabsShown) { tabsShown = show; void resizeForTabs(show); }
+  tabsEl.innerHTML = game ? `${items.join('')}<span class="grow"></span>${controls()}` : '';
+  document.body.classList.toggle('has-tabs', game);
 }
 
 function setTab(k: keyof typeof tabOn, on: boolean): void {
@@ -265,10 +252,6 @@ function setTab(k: keyof typeof tabOn, on: boolean): void {
   if (store.current) renderBar(store.current);
 }
 
-tabsEl.addEventListener('click', (e) => {
-  const k = (e.target as HTMLElement).closest('button')?.dataset.close;
-  if (k === 'clock' || k === 'replay') setTab(k, false);
-});
 
 function follow(pk: number, how: 'live' | 'replay'): void {
   if (pickerTimer) clearTimeout(pickerTimer);
@@ -278,10 +261,11 @@ function follow(pk: number, how: 'live' | 'replay'): void {
   showPitch = false;
   speed = 1;
   void fitWindow('game');
-  app.innerHTML = `<div class="bar"><span class="muted">${esc(S.ui.loading)}</span></div>${controls()}`;
+  app.innerHTML = `<div class="bar"><span class="muted">${esc(S.ui.loading)}</span></div>`;
+  renderTabs(undefined);
   // Controls stay visible for a moment so a first-time user sees they exist.
-  app.classList.add('reveal');
-  setTimeout(() => app.classList.remove('reveal'), 4000);
+  document.body.classList.add('reveal');
+  setTimeout(() => document.body.classList.remove('reveal'), 4000);
   store.follow(how === 'live' ? live : replay, pk);
 }
 
@@ -312,11 +296,11 @@ function controls(): string {
   const replayButtons = mode === 'replay'
     ? `<button data-action="toggle">${p && !p.playing && !p.done ? `▶ ${esc(S.ui.play)}` : `❚❚ ${esc(S.ui.pause)}`}</button>
        <button data-action="speed" title="${esc(S.ui.speed)}">${speed}×</button>
-       <button data-action="next">${esc(S.ui.nextResult)} ⏭</button>`
+       <button data-action="next" title="${esc(S.ui.nextResult)}">⏭</button>`
     : '';
   const tabButtons = `<button data-action="clock" aria-pressed="${tabOn.clock}" title="${esc(S.ui.clock)}">⏱</button>`
     + (mode === 'replay' ? `<button data-action="replay-tab" aria-pressed="${tabOn.replay}">${esc(S.ui.replay)}</button>` : '');
-  return `<div class="controls">${replayButtons}${tabButtons}<button data-action="back">‹ ${esc(S.ui.back)}</button></div>`;
+  return `<span class="controls">${replayButtons}${tabButtons}<button data-action="back">‹ ${esc(S.ui.back)}</button></span>`;
 }
 
 const lamps = (n: number, max: number, cls: string) =>
@@ -348,7 +332,7 @@ function renderBar(s: GameState): void {
       ${diamond(s, c[bat])}
       <span class="last">${statusText ? `<span class="status">${esc(statusText)}</span> ` : ''}${last}</span>
       ${conn && !conn.connected ? `<i class="conn" title="${esc(S.ui.reconnecting)}"></i>` : ''}
-    </div>${controls()}`;
+    </div>`;
   renderTabs(s);
   setTitle(`Basesmall · ${s.gamePk} · ${mode} · ${s.status} · ${away} ${s.score.away}-${s.score.home} ${home} · ${S.inning(s.inning, s.half)} · ${s.balls}-${s.strikes} ${s.outs}out · ${elapsed(s)}`);
 }
@@ -372,18 +356,22 @@ function replayAction(action: string): void {
 
 // ---------- input ----------
 
-app.addEventListener('click', (e) => {
+function onClick(e: MouseEvent): void {
   const t = (e.target as HTMLElement).closest('button');
   if (!t) return;
   const { day, tab, pk, action } = t.dataset;
-  if (t.dataset.fav) { favorite = t.dataset.fav; save('favorite', favorite); pickerTab = null; void showPicker(); }
+  const close = t.dataset.close;
+  if (close === 'clock' || close === 'replay') setTab(close, false);
+  else if (t.dataset.fav) { favorite = t.dataset.fav; save('favorite', favorite); pickerTab = null; void showPicker(); }
   else if (day) { pickerDate = shiftDate(pickerDate, Number(day)); pickerTab = null; void showPicker(); }
   else if (tab) { pickerTab = tab as Tab; void showPicker(); }
   else if (pk) follow(Number(pk), t.dataset.mode === 'replay' ? 'replay' : 'live');
   else if (action === 'back') void showPicker();
   else if (action === 'choose') showChooser();
   else if (action) replayAction(action);
-});
+}
+app.addEventListener('click', onClick);
+tabsEl.addEventListener('click', onClick);
 
 if (win) {
   for (const el of [app, tabsEl]) {
