@@ -10,6 +10,8 @@ const LICENCE_FILE = /^(licen[cs]e|copying|notice|copyright)([-._].*)?$/i;
 const target = process.argv[2] ?? /host: (\S+)/.exec(execFileSync('rustc', ['-vV'], { encoding: 'utf8' }))[1];
 
 // ---- Rust: the crates reachable from the app through normal (not build or dev) dependencies.
+// Their licence files live in the downloaded sources, which a fresh machine does not have yet.
+execFileSync('cargo', ['fetch', '--manifest-path', 'src-tauri/Cargo.toml', '--target', target], { stdio: 'inherit' });
 const meta = JSON.parse(execFileSync('cargo', ['metadata', '--format-version', '1', '--manifest-path', 'src-tauri/Cargo.toml', '--filter-platform', target],
   { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 }));
 const byId = new Map(meta.packages.map((p) => [p.id, p]));

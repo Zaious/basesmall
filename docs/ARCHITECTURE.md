@@ -516,7 +516,7 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 - **Windows**：NSIS 安裝檔設成只裝給目前使用者（`installMode: currentUser`），不需要系統管理員權限；另有免安裝 zip（`Basesmall.exe`、授權、`docs/PORTABLE.txt` 當說明）。兩者都沒有程式碼簽章，README 與 zip 內的說明寫了「Windows 已保護您的電腦」怎麼過。都需要 WebView2。
 - **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性，未簽章、未在實機測試。
 - **自動建置**：`.github/workflows/ci.yml` 每次推送跑型別檢查與測試（Linux），並在乾淨的 Windows 機器上照 README 的指令建置。這就是「全新環境照 README 一個指令跑起來」的驗收。`.github/workflows/release.yml` 在推版本標籤時建置三個平台，結果放進一個**草稿**發布，維護者看過按「發布」才公開。
-- **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
+- **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。它只在 `src-tauri/tauri.release.conf.json` 裡列為打包資源：放在主設定的話，Tauri 的 build script 在任何建置（包括 `tauri dev`）都要求檔案存在，乾淨的 clone 照 README 建置會直接失敗（CI 第一次跑就是這樣失敗的）。腳本先 `cargo fetch`，因為授權全文在下載下來的原始碼裡，全新的機器還沒有。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
 - **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。
 - **文件**：README 重寫（下載、Windows 警告、隱私、使用方式、從原始碼建置）；`CONTRIBUTING.md`（隊色、風格、錯誤回報、程式規則、**如何接其他聯盟**）；`CHANGELOG.md`；issue 範本（隊色、錯誤回報）。
 - **展示**：README 用一場真實比賽（2026 美聯外卡第 2 戰，Bellinger 的三分砲）錄成 GIF，加一張四種尺寸的圖。錄製時在程式後面墊一個純色視窗，避免桌面上其他東西入鏡；每一格都自動檢查邊框外是否只有底色，不合格的整批刪掉重錄（錄製時就抓到兩次：一次底色視窗被其他視窗蓋過，一次底色視窗沒跟著程式變大）。

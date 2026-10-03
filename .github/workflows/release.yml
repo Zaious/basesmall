@@ -57,7 +57,7 @@ jobs:
           releaseBody: See CHANGELOG.md. macOS and Linux builds are experimental and unsigned.
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json
       - name: Windows portable zip (no install, no admin)
         if: startsWith(matrix.os, 'windows')
         shell: pwsh

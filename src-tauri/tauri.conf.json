@@ -41,8 +41,7 @@
     "longDescription": "An unofficial desktop companion that follows live MLB games as a few quiet, abstract pieces in a corner of your screen.",
     "homepage": "https://github.com/Zaious/basesmall",
     "resources": {
-      "../LICENSE": "LICENSE.txt",
-      "../THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
+      "../LICENSE": "LICENSE.txt"
     },
     "windows": {
       "nsis": {

@@ -91,7 +91,7 @@ npm run typecheck
 node scripts/probe/07-fixtures.mjs   # record a few finished games into fixtures/mlb/ (git-ignored)
 ```
 
-Installers need the third-party licence file first: `node scripts/third-party-licenses.mjs`, then `npm run tauri build`.
+Installers as released, with the third-party licences inside: `node scripts/third-party-licenses.mjs`, then `npm run tauri build -- --config src-tauri/tauri.release.conf.json`.
 
 Open a game directly: `basesmall --game=<gamePk>` follows it live, `--mode=replay` replays a finished one.
 

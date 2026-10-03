@@ -58,7 +58,8 @@ describe.skipIf(!haveAB())('MlbLiveSource', () => {
   const feedA = recorded(A) as MlbFeed;
   const feedB = recorded(B) as MlbFeed;
   const patchAB = recorded(AB);
-  const tsA = feedA.metaData!.timeStamp!, tsB = feedB.metaData!.timeStamp!;
+  // A skipped describe still runs its body to collect tests, so this must not throw without fixtures.
+  const tsA = feedA?.metaData?.timeStamp ?? '', tsB = feedB?.metaData?.timeStamp ?? '';
   const beat = (ts: string) => () => ({ metaData: { timeStamp: ts, wait: 10 } });
 
   function harness(responses: ((path: string) => unknown)[]) {
