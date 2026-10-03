@@ -14,6 +14,37 @@ fn launch_args() -> Vec<String> {
     std::env::args().skip(1).collect()
 }
 
+/// Style files from `<app config dir>/styles/` as (file name, text). Styles are data only; the
+/// web view validates each one and skips any that fail. The folder is created so users can find it.
+#[tauri::command]
+fn user_styles(app: tauri::AppHandle) -> Vec<(String, String)> {
+    const MAX_FILES: usize = 50;
+    const MAX_BYTES: u64 = 64 * 1024;
+    let Ok(dir) = app.path().app_config_dir() else { return Vec::new() };
+    let dir = dir.join("styles");
+    let _ = std::fs::create_dir_all(&dir);
+    let Ok(entries) = std::fs::read_dir(&dir) else { return Vec::new() };
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let Ok(meta) = entry.metadata() else { continue };
+        if !meta.is_file() || meta.len() > MAX_BYTES {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|n| n.to_str()).map(str::to_owned) else { continue };
+        let Ok(text) = std::fs::read_to_string(&path) else { continue };
+        out.push((name, text));
+        if out.len() >= MAX_FILES {
+            break;
+        }
+    }
+    out.sort();
+    out
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(
@@ -22,7 +53,7 @@ pub fn run() {
                 .with_state_flags(StateFlags::POSITION)
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![launch_args])
+        .invoke_handler(tauri::generate_handler![launch_args, user_styles])
         .setup(|app| {
             let toggle = MenuItem::with_id(app, "toggle", "Show / hide", true, None::<&str>)?;
             let click_through =

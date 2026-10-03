@@ -23,7 +23,7 @@ MLB Stats API
 [Adapter]  MLB 原始 JSON → 標準化 GameState 與 GameEvent
    ▼
 [GameStore]  目前狀態 + 事件佇列
-   ├──▶ [AnimationQueue] ──▶ [Renderer: three.js]
+   ├──▶ [AnimationQueue] ──▶ [Renderer: 內建 SVG（平面／2.5D）；3D 是可選風格]
    ├──▶ [Audio]  訂閱事件，觸發音效
    └──▶ [UI/HUD]  比分、局數、設定面板
 
@@ -125,11 +125,20 @@ interface GameSource {
 - 佇列落後太多時要有追趕機制（加速或略過細節動畫），以最終狀態為準。
 - 動畫風格化，不假裝寫實跑動。
 
+**實作（M3）**：`src/render/queue.ts`。一次播一步，播完才換下一步；比分、局數等文字在該步的動畫播完後才更新，好球帶在投球當下就更新。有步驟在排隊時，下一步以 `1 + 排隊數` 倍速播放；排隊超過 4 步就跳到最新一步（不播動畫），被跳過的步驟的事件文字併入，所以最後一則播報仍正確。重播時拖動或跳到下一個結果，佇列直接清空；直播中沒有事件的狀態（官方更正、下一位打者上場）排在前面的動畫後面，不清空。
+
 ### 4.4 Renderer
 
 - Renderer 由風格提供，介面見 4.8。（2026-10-03 改寫：原為俯瞰全場與投打小劇場兩種攝影機。）
 - 棋子用基本幾何體（圓片、圓柱、球、車床面）；材質、打光、環境貼圖要克制。【已決定：不往更精緻的方向推】
 - 視窗隱藏或失焦時降低或暫停繪製。
+
+**實作（M3）**：
+
+- `src/render/scene.ts`：棋盤的資料模型，純函式。`sceneOf(state, events)` 算出這個狀態下哪些棋子在哪裡（壘上跑者、打擊中的打者、投手丘上的投手；終場清空）。`planStep(前一個棋盤, 狀態, 事件)` 算出這一步要怎麼動：擊球飛行 750 ms，跑者在球落地後沿壘包路徑跑（每個壘 330 ms；二壘安打把一壘跑者送回本壘時，路徑經過二、三壘），得分的人跑回本壘後淡出，出局的人往前漂一點再淡出，換局時投手棋子像黑白棋一樣翻面換色，新打者也翻面出場。打者第一球就擊出時，先讓他在本壘出現再跑。
+- `src/render/field-svg.ts`：內建的 SVG renderer，平面與 2.5D 共用，依風格檔的 `renderer` 選投影。只畫 Scene、只播 Plan，自己不解讀比賽事件。動畫迴圈只在有東西在動時才要畫面（`src/render/tween.ts`），棋盤靜止時不耗資源。
+- `src/render/zone.ts`：好球帶（捕手視角），產生 SVG 字串。
+- `src/render/geometry.ts`：場地座標（英尺）與兩種投影。MLB 擊球座標以本壘 (125.42, 198.27)、每單位 2.5 英尺換算；2.5D 把 130 英尺以外壓縮成五分之一，整條飛球才放得進畫面。全壘打牆是通用的 330／400 英尺，不是任何真實球場。
 
 ### 4.5 Audio
 
@@ -157,6 +166,12 @@ interface GameSource {
 
 場與全在寬度不足 340 時省略好球帶。選配視窗的開關、音效、設定收在滑鼠移上去才出現的選單裡，不佔條的寬度。【已決定】2026-10-03 使用者看過模擬後定案。
 
+**實作（M3）**：檔位規則在 `src/render/tiers.ts`，各檔位的文字在 `src/ui/views.ts`。以下為【建議】（PRD §3.2.2）：
+
+- 第一次開比賽，視窗預設為「場」（480×160）。
+- 控制列有「⤢ 尺寸」按鈕，依序換 條→場→全→點，各檔位記得自己上次的大小；拖曳右下角換檔照舊可用。另有「◇ 風格」按鈕在所有風格之間輪換。
+- 視窗寬度不足 300 時，頁籤只留時鐘，控制只留播放、尺寸、返回。
+
 **背景模式**【已決定：可切換透明；三段為建議】
 
 - 實底、半透明、全透明三段。
@@ -179,7 +194,9 @@ interface GameSource {
 | 資料風格 | 一份 JSON：色彩 token、棋子形狀、厚度、描邊、陰影、版面參數。交給內建的平面或 2.5D renderer 解讀 | 暗夜、白晝、黑白棋盤、半透明極簡 | 可在執行時從使用者的風格資料夾載入 |
 | 程式風格 | 一個 JS 模組，自己實作 renderer | 3D（three.js）、像素風 | 只在建置時打包，社群以 PR 貢獻 |
 
-**草案已落地（2026-10-03）**：資料風格的格式定義在 `src/styles/manifest.ts`（含驗證器，文字對面板的對比度要達 4.5），內建的 `styles/flat.json`、`styles/iso.json` 同時是範例，撰寫指南在 `styles/README.md`。棋子顏色一律用球隊色，不由風格決定。格式在 M3 renderer 完成時定案。
+**格式定案（M3，format 1）**：資料風格的格式定義在 `src/styles/manifest.ts`（含驗證器，文字對面板的對比度要達 4.5），內建的 `styles/flat.json`、`styles/iso.json` 同時是範例，撰寫指南在 `styles/README.md`。棋子顏色一律用球隊色，不由風格決定。
+
+**使用者風格資料夾（M3）**：程式啟動時讀 `<app config dir>/styles/*.json`（Windows 為 `%APPDATA%\io.github.zaious.basesmall\styles\`，程式會建立這個資料夾）。Rust 端只負責讀檔（最多 50 個、每個 64 KB 以內），驗證在 `src/styles/loader.ts`：格式不對、`id` 與檔名不符、和既有風格撞名的檔案都會略過，原因列在風格按鈕的滑鼠提示裡；通過的檔案只保留已知欄位。顏色一律是驗證過的 `#RRGGBB[AA]`，名稱顯示前會跳脫，所以風格檔無法注入任何東西。
 
 程式風格不開放從磁碟任意載入：一個會自動執行下載來的腳本的桌面程式，就是一個安全漏洞。資料風格沒有這個問題。
 
@@ -198,6 +215,20 @@ interface StyleRenderer {
   update(view: FieldView): void;              // 標準化後的畫面狀態，看不到 MLB 原始 JSON
   play(event: GameEvent): Promise<void>;      // AnimationQueue 依序呼叫，等它播完再播下一個
   resize(w: number, h: number, tier: SizeTier): void;
+  dispose(): void;
+}
+```
+
+M3 實作後的 renderer 介面（`src/render/field-svg.ts`，程式風格日後照這個實作）。和上面草案的差別：renderer 不再逐一解讀 GameEvent，改成接收已經算好的 Scene（誰在哪裡）與 Plan（這一步怎麼動），比賽規則只寫一次（`scene.ts`），每個 renderer 不必各自處理跑壘、換局、代跑：
+
+```ts
+interface BoardRenderer {
+  show(scene: Scene): void;                        // 直接顯示，不播動畫（跳轉、改尺寸）
+  play(plan: Plan, speed: number): Promise<void>;  // 播一步，播完才 resolve；finish() 可提前結束
+  finish(): void;
+  setLook(look: { style; background; paints }): void;
+  setLabel(text: string, ring: boolean): void;     // 打者名字與本壘的打席圈
+  resize(): void;
   dispose(): void;
 }
 ```
@@ -227,8 +258,9 @@ interface StyleRenderer {
 │  ├─ model/             GameState / GameEvent 型別、GameStore
 │  ├─ data/mlb/          MLB 原始資料型別與轉換（timeline.ts）
 │  ├─ data/replay/       重播節奏、播放器、MlbReplaySource
-│  ├─ render/            平面／2.5D（SVG）與 3D（three.js）renderer（M3）
-│  ├─ i18n/              zh-Hant.json、en.json、事件文字模板（M3）
+│  ├─ render/            棋盤模型（scene）、動畫佇列、檔位、平面／2.5D SVG renderer、好球帶
+│  ├─ styles/            風格檔格式、驗證、載入、球隊色
+│  ├─ i18n/              介面字串與事件文字模板（index.ts，兩種語言的鍵由型別檢查對齊）
 │  ├─ audio/             音效管理（M4）
 │  └─ ui/                HUD、設定面板、計分板、通知
 ├─ src-tauri/            Rust：視窗、抓取、設定（M2）
@@ -313,9 +345,36 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 
 **投球計時器**：公開資料沒有計時器倒數（全欄位搜尋 clock、timer 皆無），不做。
 
-**M3 — 棋子賽場與風格接縫**
+**M3 — 棋子賽場與風格接縫**【Windows 完成 2026-10-03】
 - 風格載入機制、內建平面與 2.5D 風格、球隊色、主視窗尺寸檔位與背景模式、事件動畫、追趕機制。3D 風格不在本里程碑。
 - 驗收：回放一整場延長賽，畫面與狀態一致，無明顯卡頓。
+
+實作見 4.3、4.4、4.6、4.8。驗收方式與結果：
+
+| 項目 | 結果 | 方法 |
+| --- | --- | --- |
+| 棋盤與官方狀態一致（純邏輯） | 24 場測試夾具逐步檢查：每一步結束時壘上跑者與狀態相同，所有跑壘路徑從棋子原位出發、只往前，由事件推出的路徑與狀態不符的次數 0 | `tests/scene.test.ts`；`node scripts/board-census.ts` 對 `fixtures/mlb/` 全部 25 場統計：7,999 步、跑者移動 1,029 次、跑回本壘 258 次、一次跑超過一個壘 332 次、路徑與狀態不符 0 |
+| 棋盤與官方狀態一致（實際畫面） | 12 局延長賽 824624 以 32 倍速整場重播：455 步逐步比對畫出來的棋子（位置、顏色、球員）與狀態，不一致 0；終場 MIA 8-2 | `--selfcheck`，結果寫在視窗標題 |
+| 無明顯卡頓 | 同一場：動畫期間 767 個畫格，間隔 p95 7.1 ms、最長 14.5 ms、超過 50 ms 的 0 個；追趕機制跳過的步驟 0 | 同上，`requestAnimationFrame` 間隔 |
+| 資源（4 倍速重播 60 秒，場） | 增加 CPU 1.94 秒（單核 3.2%）、私有記憶體 +64 MB；畫格間隔 p95 7.0 ms、最長 14.4 ms | 見下方註 |
+| 資源（暫停的全，60 秒） | 增加 CPU 0.30 秒（單核 0.5%）、私有記憶體 +33 MB | 見下方註 |
+| 尺寸按鈕 | 條→場→全→點，視窗依序變成 720×126、720×270、720×540、252×72（實體像素，150% 縮放） | `--press=size,size,size,style` 與視窗截圖 |
+| 風格按鈕 | 2.5D→平面 | 同上 |
+| 使用者風格資料夾 | 合法的淺色風格檔被載入並套用到整個視窗；格式錯誤的檔案被略過，列出 13 個問題 | 在資料夾放兩個測試檔，`--style=<id> --selfcheck`，測完刪除 |
+| 透明背景 | 文字都在膠囊上，棋盤改畫半透明底與淺色線 | 截圖 |
+
+註：量資源時，維護者自己的 Basesmall 也開著。同一個資料夾的 WebView2 程序由兩個執行個體共用，分不出各自的用量，所以先量 60 秒只有原本那個執行個體時的基準，再量多開測試執行個體後的 60 秒，取兩者的差。單一執行個體的絕對值【未量測】。
+
+檢查用的啟動參數（不會存任何設定）：`--tier=dot|bar|field|full`、`--style=<id>`、`--bg=solid|semi|clear`、`--speed=<倍數>`、`--seek=<步>`、`--paused`、`--selfcheck`、`--press=<控制項>,<控制項>`。
+
+實作中發現並修正：
+
+- 重播播放器：在收到一步的回呼裡跳轉（`--seek` 就是這樣做），下一步會被排兩次；在回呼裡暫停則無效。改用世代計數，被取代的計時器不再排下一步（`tests/replay.test.ts` 兩個新測試）。
+- 第一球就擊出的打者從沒在本壘出現過，全壘打沒有人跑壘。現在投球時先讓他出現（`tests/scene.test.ts`）。
+- 「全」的棋盤與好球帶在下方兩列填入之前就量了尺寸，畫得太大被切掉。改成觀察這兩塊自己的尺寸，變了就重畫。
+- 平面風格的打者名字壓在棋子上。
+
+未驗證：用滑鼠拖曳跨檔位（只驗了程式改尺寸）、macOS 與 Linux、直播中的動畫（等分區系列賽）。
 
 **M4 — 音效與設定面板**
 - 安打、全壘打音效，所有開關，設定持久化。

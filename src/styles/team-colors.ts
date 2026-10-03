@@ -51,13 +51,15 @@ export function cssFill(p: Paint): string {
   return p.color;
 }
 
-/** SVG fill and the <pattern> it needs. `id` must be unique in the document. */
-export function svgFill(p: Paint, id: string): { defs: string; fill: string } {
+/**
+ * SVG fill and the <pattern> it needs. `id` must be unique in the document.
+ * `rotate` turns the stripes: base diamonds are drawn rotated 45°, so they rotate the pattern back.
+ */
+export function svgFill(p: Paint, id: string, rotate = -45): { defs: string; fill: string } {
   if (p.pattern?.kind !== 'pinstripe') return { defs: '', fill: p.color };
   const { base, stripe } = p.pattern;
-  // Shapes are often rotated (base diamonds); rotate the pattern back so stripes stay vertical.
   return {
-    defs: `<pattern id="${id}" patternUnits="userSpaceOnUse" width="3" height="3" patternTransform="rotate(-45)"><rect width="3" height="3" fill="${base}"/><rect width="1" height="3" fill="${stripe}"/></pattern>`,
+    defs: `<pattern id="${id}" patternUnits="userSpaceOnUse" width="3" height="3"${rotate ? ` patternTransform="rotate(${rotate})"` : ''}><rect width="3" height="3" fill="${base}"/><rect width="1" height="3" fill="${stripe}"/></pattern>`,
     fill: `url(#${id})`,
   };
 }

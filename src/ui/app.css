@@ -1,8 +1,7 @@
-/* M2 minimal view. Colours come from a style file (styles/*.json) as CSS variables. */
+/* Colours come from the active style file (styles/*.json) as CSS variables. */
 :root {
   --background: #15171C; --panel: #1B1E24; --border: #2A2E37; --text: #E8EAEE; --muted: #A0A6B1;
   --accent: #E8B04A; --ball: #8EC1F0; --strike: #D9643F; --out: #ECE8DF;
-  --away: #9AA0AA; --home: #5A606B;
   --font: 'Segoe UI Variable', 'Segoe UI', 'Microsoft JhengHei UI', 'PingFang TC', system-ui, sans-serif;
   --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
 }
@@ -15,34 +14,95 @@ body { color: var(--text); font: 13px/1.35 var(--font); user-select: none; -webk
 #app.bg-semi { background: color-mix(in srgb, var(--background) 62%, transparent); border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 #app.bg-clear { background: transparent; border: 1px solid transparent; }
 #app.bg-clear:hover { border-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+#app[data-tier='dot'] { border-radius: 999px; }
 
-.cap { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; white-space: nowrap; }
+/* Capsules carry their own background, so text stays readable on any wallpaper. */
+.cap { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; white-space: nowrap; overflow: hidden; min-width: 0; }
 .bg-solid .cap { background: var(--panel); }
 .bg-semi .cap { background: color-mix(in srgb, var(--panel) 70%, transparent); }
-.bg-clear .cap { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.bg-clear .cap { background: color-mix(in srgb, var(--panel) 88%, transparent); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
 .dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--text) 75%, transparent); flex: 0 0 9px; }
 .muted { color: var(--muted); }
-.mono { font-family: var(--mono); }
+.mono, svg text.mono { font-family: var(--mono); }
+.grow { flex: 1; }
 .lamps { display: inline-flex; gap: 3px; }
 .lamp { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 30%, transparent); }
 .lamp.b { background: var(--ball); } .lamp.s { background: var(--strike); } .lamp.o { background: var(--out); }
 button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; }
-
-/* game bar */
-.bar { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 12px; min-width: 0; }
-.bar .score { font: 600 14px var(--mono); gap: 5px; }
-.bar .last { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
-.bar .last b { color: var(--text); font-weight: 600; }
-.diamond { flex: 0 0 auto; }
 .conn { width: 7px; height: 7px; border-radius: 50%; background: var(--strike); flex: 0 0 7px; }
 .status { color: var(--accent); }
+.diamond { flex: 0 0 auto; }
 
+/* ---------- dot tier: one pill ---------- */
+/* Padding clears the rounded ends, which are as wide as half the height. */
+.pill { flex: 1; display: flex; align-items: center; gap: 5px; padding: 0 12px; font: 600 12px var(--mono); min-width: 0; white-space: nowrap; overflow: hidden; }
+.pill .sc { display: inline-flex; align-items: center; gap: 3px; }
+.pill .inn { color: var(--muted); font-weight: 500; }
+.pill .lamp { width: 5px; height: 5px; }
+.bg-clear .pill { background: color-mix(in srgb, var(--panel) 88%, transparent); border-radius: 999px; }
 
-/* picker */
+/* ---------- bar tier: the prototype's control bar ---------- */
+.bar { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 12px; min-width: 0; }
+.bg-clear .bar { background: color-mix(in srgb, var(--panel) 88%, transparent); border-radius: 999px; }
+.bar .sb { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
+.bar .sb .l1 { display: flex; align-items: center; gap: 5px; font: 600 14px var(--mono); }
+.bar .sb .l2 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.bar .sb .l2 .mono { font-size: 11px; }
+.bar .last { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
+.bar .last b { color: var(--text); font-weight: 600; }
+
+/* ---------- field and full tiers: capsules, board, strike zone ---------- */
+.strip { position: relative; display: flex; gap: 8px; padding: 8px 10px; flex: 1 1 auto; min-height: 0; }
+.hud { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; width: 146px; justify-content: center; font-size: 12px; min-width: 0; }
+.hud .cap { display: flex; }
+.hud .score { font: 600 13px var(--mono); gap: 5px; }
+.hud .pit b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.fieldwrap { position: relative; flex: 1 1 auto; min-width: 0; }
+.fieldwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.zonewrap { flex: 0 0 118px; display: flex; flex-direction: column; gap: 5px; min-height: 0; }
+.zonewrap svg { flex: 1 1 auto; width: 100%; min-height: 0; border-radius: 8px; }
+.bg-solid .zonewrap svg { background: var(--panel); }
+.bg-semi .zonewrap svg { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+.bg-clear .zonewrap svg { background: color-mix(in srgb, var(--panel) 80%, transparent); }
+.pcap { display: flex; height: 22px; flex: 0 0 22px; font-size: 11px; justify-content: center; gap: 5px; padding: 0 7px; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
+.pcap .n { width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center; font: 600 9px var(--mono); color: var(--background); flex: 0 0 14px; }
+.pcap .what { overflow: hidden; text-overflow: ellipsis; }
+.zone .pop { transform-box: fill-box; transform-origin: center; animation: pop-in .22s ease-out; }
+@keyframes pop-in { from { transform: scale(.3); } }
+
+/* the latest play, over the board */
+.bubble { position: absolute; left: 50%; top: 0; transform: translateX(-50%); max-width: calc(100% + 110px); z-index: 3; padding: 3px 10px; border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--border); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35); pointer-events: none; opacity: 0; transition: opacity .2s; }
+.bubble.show { opacity: 1; animation: bubble-in .28s ease-out; }
+.bubble.hr { background: var(--accent); color: var(--background); border-color: var(--accent); font-weight: 600; }
+.bubble b { font-weight: 600; }
+@keyframes bubble-in { from { transform: translateX(-50%) translateY(4px) scale(.94); } to { transform: translateX(-50%) translateY(0) scale(1); } }
+
+/* full tier: matchup and runs by inning */
+.below { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
+.mu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mu .cap { display: flex; height: 26px; font-size: 12px; }
+.mu .cap .k { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+.mu .cap b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.mu .cap .v { margin-left: auto; color: var(--muted); font: 11px var(--mono); flex: 0 0 auto; }
+.ls { border-collapse: collapse; font: 11px var(--mono); width: 100%; table-layout: fixed; border-radius: 8px; overflow: hidden; }
+.bg-solid .ls { background: var(--panel); }
+.bg-semi .ls { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+.bg-clear .ls { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.ls th, .ls td { text-align: center; padding: 3px 0; color: color-mix(in srgb, var(--text) 85%, var(--muted)); font-weight: 400; }
+.ls thead th { color: var(--muted); }
+.ls th.t { text-align: left; padding-left: 8px; width: 52px; }
+.ls th.t span { display: inline-flex; align-items: center; gap: 5px; }
+.ls .cur { color: var(--accent); }
+.ls td.now { background: var(--border); color: var(--text); }
+.ls td.rh { font-weight: 600; color: var(--text); width: 24px; }
+.ls td.na { color: color-mix(in srgb, var(--muted) 45%, transparent); }
+
+/* ---------- picker ---------- */
 .picker { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 8px 10px 6px; gap: 6px; }
 .picker header { display: flex; align-items: center; gap: 6px; }
 .picker header .date { font-family: var(--mono); color: var(--muted); }
-.picker header .grow { flex: 1; }
 .tabs { display: flex; gap: 3px; }
 .tabs button { height: 22px; padding: 0 9px; border-radius: 11px; color: var(--muted); }
 .tabs button[aria-pressed='true'] { background: var(--border); color: var(--text); }
@@ -52,12 +112,16 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .row .teams { font: 600 12px var(--mono); display: inline-flex; align-items: center; gap: 5px; }
 .row .when { margin-left: auto; color: var(--muted); font-size: 12px; }
 .empty { color: var(--muted); padding: 6px 4px; }
+.picker .fav { height: 22px; padding: 0 8px; border-radius: 11px; color: var(--accent); font: 600 12px var(--mono); }
+.picker .fav:hover { background: var(--panel); }
+.row.mine .teams { color: var(--accent); }
+.row .star { color: var(--accent); margin-right: 2px; }
+.empty.small { font-size: 11px; padding: 0 4px; }
 
 #grip { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 10; }
 #grip::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); opacity: .45; }
 
-
-/* team chooser */
+/* ---------- team chooser ---------- */
 .chooser { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-height: 0; overflow-y: auto; }
 .chooser .hint { margin: 0; color: var(--muted); font-size: 12px; }
 .chooser .teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
@@ -65,37 +129,23 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .chooser .team:hover { background: var(--panel); }
 .chooser .team[aria-pressed='true'] { background: var(--border); }
 .chooser .none { align-self: flex-start; font-family: var(--font); font-weight: 400; color: var(--muted); }
-.picker .fav { height: 22px; padding: 0 8px; border-radius: 11px; color: var(--accent); font: 600 12px var(--mono); }
-.picker .fav:hover { background: var(--panel); }
-.row.mine .teams { color: var(--accent); }
-.row .star { color: var(--accent); margin-right: 2px; }
-.empty.small { font-size: 11px; padding: 0 4px; }
 
-.clock { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
-
-/* two-line score block (prototype control bar) */
-.bar .sb { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
-.bar .sb .l1 { display: flex; align-items: center; gap: 5px; font: 600 14px var(--mono); }
-.bar .sb .l2 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-.bar .sb .l2 .mono { font-size: 11px; }
-
-/* tabs above the score bar: clock, replay. Each closes on its own and does not take the main row. */
+/* ---------- strip above the game: tabs (clock, replay) left, controls right ---------- */
+/* Each tab closes on its own and none of it takes room from the game. */
 #tabs { position: absolute; top: 0; left: 14px; right: 14px; height: 20px; display: none; gap: 4px; align-items: flex-end; z-index: 2; }
 body.has-tabs #tabs { display: flex; }
 body.has-tabs #app { top: 20px; }
-#tabs .tab { height: 20px; display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 9px; border-radius: 8px 8px 0 0;
+#tabs .tab { height: 20px; display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 9px; border-radius: 8px 8px 0 0; min-width: 0; overflow: hidden; white-space: nowrap; flex: 0 1 auto;
   border: 1px solid var(--border); border-bottom: 0; font-size: 11px; color: var(--muted); position: relative; top: 1px; }
 #tabs.bg-solid .tab { background: var(--background); }
 #tabs.bg-semi .tab { background: color-mix(in srgb, var(--background) 62%, transparent); }
 #tabs.bg-clear .tab { background: color-mix(in srgb, var(--panel) 88%, transparent); }
 #tabs .tab.accent { color: var(--accent); }
-#tabs .tab button { width: 16px; height: 16px; border-radius: 4px; padding: 0; line-height: 14px; color: var(--muted); opacity: .55; }
+#tabs .tab button { width: 16px; height: 16px; border-radius: 4px; padding: 0; line-height: 14px; color: var(--muted); opacity: .55; flex: 0 0 16px; }
 #tabs .tab button:hover { opacity: 1; background: var(--border); color: var(--text); }
 
-/* controls live in the strip above the bar, right side, so they never cover the game.
-   Shown for a moment when a game opens, then on hover. */
-#tabs .grow { flex: 1; }
-#tabs .controls { display: inline-flex; align-items: flex-end; gap: 1px; height: 20px; padding: 0 3px; border-radius: 8px 8px 0 0;
+/* Controls: shown for a moment when a game opens, then on hover. */
+#tabs .controls { display: inline-flex; align-items: flex-end; gap: 1px; height: 20px; padding: 0 3px; border-radius: 8px 8px 0 0; flex: 0 0 auto;
   border: 1px solid var(--border); border-bottom: 0; position: relative; top: 1px;
   opacity: 0; pointer-events: none; transition: opacity .15s; }
 #tabs.bg-solid .controls { background: var(--background); }

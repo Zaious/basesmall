@@ -1,8 +1,8 @@
 # Writing a style
 
-Every look in Basesmall is a style file: one JSON file in this folder. The two built-in styles, [`flat.json`](flat.json) and [`iso.json`](iso.json), are the examples. Copy one, change it, and open a pull request.
+Every look in Basesmall is a style file: one JSON file in this folder. The two built-in styles, [`flat.json`](flat.json) and [`iso.json`](iso.json), are the examples. Copy one, change it, try it in the app, and open a pull request.
 
-> **Draft.** The format is settled when the renderer ships (milestone M3). Until then fields may still change, and there is no app to preview a style in. `npm test` already checks every file here.
+The format below is `"format": 1`. Later changes will either stay compatible or bump the number.
 
 ## What a style controls, and what it does not
 
@@ -70,6 +70,20 @@ Colours are `#RRGGBB`, or `#RRGGBBAA` with alpha.
 - **Quiet.** Someone walking past should not think "sports". Saturated, flashing or high-contrast-everywhere styles belong in a fork.
 - **No logos and no team art.** No league or team marks, wordmarks, letters or numbers, and nothing traced from a uniform or a broadcast. Team colours and simple patterns such as pinstripes are fine, and they live in [`team-colors/mlb.json`](team-colors/mlb.json), not in a style.
 - **Your own work.** Only submit colours and designs you made or have the right to share under the MIT license.
+
+## Trying your style in the app
+
+Put the file in the app's styles folder and restart Basesmall. The app creates the folder the first time it runs:
+
+| System | Folder |
+| --- | --- |
+| Windows | `%APPDATA%\io.github.zaious.basesmall\styles\` |
+| macOS (untested) | `~/Library/Application Support/io.github.zaious.basesmall/styles/` |
+| Linux (untested) | `~/.config/io.github.zaious.basesmall/styles/` |
+
+In a game, hover over the window and press **◇** until your style's name shows. Press **⤢** to see it at every size, and try the three backgrounds from the tray menu: a style has to work in all of them.
+
+A file that fails the rules below is skipped. Hover over **◇** to see why.
 
 ## Checking your style
 

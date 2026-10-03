@@ -2,7 +2,8 @@
 // structured events (never from MLB's English description), so both languages read naturally.
 // Player names are not translated.
 
-import type { GameEvent, GameStatus, Half, PitchMark } from '../model/types.ts';
+import type { GameEvent, GameStatus, Half, Hand, PitchMark } from '../model/types.ts';
+import type { Tier } from '../render/tiers.ts';
 
 export type Lang = 'zh-Hant' | 'en';
 export const LANGS: readonly Lang[] = ['zh-Hant', 'en'];
@@ -56,10 +57,17 @@ interface Strings {
   pitchingChange: string;
   automaticBall: string;
   automaticStrike: string;
+  /** "Right-handed batter" in a few characters. */
+  bats(h: Hand): string;
+  throws(h: Hand): string;
+  feet(n: number): string;
+  /** Size tiers of the main window. */
+  tier: Record<Tier, string>;
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
     'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed' |
-    'play' | 'pause' | 'speed' | 'nextResult' | 'chooseTeam' | 'chooseTeamHint' | 'noFavorite' | 'favorite' | 'clock',
+    'play' | 'pause' | 'speed' | 'nextResult' | 'chooseTeam' | 'chooseTeamHint' | 'noFavorite' | 'favorite' | 'clock' |
+    'size' | 'style' | 'pitcher' | 'batter' | 'todayLine' | 'noPitchData',
     string
   >;
 }
@@ -125,6 +133,10 @@ const zh: Strings = {
   pitchingChange: '換投',
   automaticBall: '自動壞球',
   automaticStrike: '自動好球',
+  bats: (h) => (h === 'L' ? '左打' : '右打'),
+  throws: (h) => (h === 'L' ? '左投' : '右投'),
+  feet: (n) => `${n} 呎`,
+  tier: { dot: '點', bar: '條', field: '場', full: '全' },
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
     reconnecting: '連線中斷，重試中', replay: '重播', back: '回清單', pickGame: '選一場比賽',
@@ -132,6 +144,7 @@ const zh: Strings = {
     play: '播放', pause: '暫停', speed: '速度', nextResult: '下一個結果',
     chooseTeam: '你的主隊是？', chooseTeamHint: '主隊的比賽會排在最前面，撞色時主隊保留原色。之後可以改。',
     noFavorite: '不指定', favorite: '主隊', clock: '比賽經過時間',
+    size: '尺寸（也可以拖曳右下角）', style: '風格', pitcher: '投', batter: '打', todayLine: '今日', noPitchData: '此場無落點資料',
   },
 };
 
@@ -195,6 +208,10 @@ const en: Strings = {
   pitchingChange: 'Pitching change',
   automaticBall: 'Automatic ball',
   automaticStrike: 'Automatic strike',
+  bats: (h) => (h === 'L' ? 'LHB' : 'RHB'),
+  throws: (h) => (h === 'L' ? 'LHP' : 'RHP'),
+  feet: (n) => `${n} ft`,
+  tier: { dot: 'Dot', bar: 'Bar', field: 'Field', full: 'Full' },
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',
     reconnecting: 'Connection lost, retrying', replay: 'Replay', back: 'Back', pickGame: 'Pick a game',
@@ -202,6 +219,7 @@ const en: Strings = {
     play: 'Play', pause: 'Pause', speed: 'Speed', nextResult: 'Next result',
     chooseTeam: 'Which team is yours?', chooseTeamHint: 'Its games come first, and it keeps its colour when two teams clash. You can change this later.',
     noFavorite: 'No team', favorite: 'My team', clock: 'Game time',
+    size: 'Size (or drag the bottom-right corner)', style: 'Style', pitcher: 'P', batter: 'AB', todayLine: 'Today', noPitchData: 'No pitch locations for this game',
   },
 };
 
