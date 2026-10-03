@@ -6,7 +6,7 @@ teamcolorcodes.com as the upstream source for every MLB team.
 
 Only hex colour values and colour names are used. No logos, wordmarks or uniform art.
 
-The `piece` and `alt` fields are this project's own selection from each palette.
+The `piece`, `alt` and `pattern` fields are this project's own selection and additions.
 
 ---
 

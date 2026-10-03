@@ -1,24 +1,65 @@
-// Piece colours for a matchup. Pieces always use team colours; when the two are too close,
-// the user's own team keeps its colour and the other side switches to its alternate.
+// Piece paint for a matchup. Pieces always use team colours, or a team's simple pattern
+// (pinstripes). When the two read as the same colour, the user's own team keeps its look and
+// the other side switches to its alternate colour.
 
 import table from '../../styles/team-colors/mlb.json' with { type: 'json' };
 import type { Side } from '../model/types.ts';
 
-interface TeamColour { piece: string; alt: string }
-const TEAMS = (table as { teams: Record<string, TeamColour> }).teams;
+export interface Pinstripe { kind: 'pinstripe'; base: string; stripe: string }
+/** A solid colour, or a pattern with a solid fallback for places that cannot draw one. */
+export interface Paint { color: string; pattern?: Pinstripe }
+
+interface TeamColour { piece: string; alt: string; pattern?: Pinstripe }
+const TEAMS = (table as unknown as { teams: Record<string, TeamColour> }).teams;
 const FALLBACK: Record<Side, TeamColour> = {
   away: { piece: '#9AA0AA', alt: '#5A606B' },
   home: { piece: '#5A606B', alt: '#9AA0AA' },
 };
-/** OKLab distance below which two piece colours read as the same team. */
+/** OKLab distance below which two pieces read as the same team. */
 export const CLASH_DISTANCE = 0.12;
 
-export function pieceColours(away: string, home: string, favourite?: string): Record<Side, string> {
+/** What a piece looks like from a distance: a pattern's base colour, else its colour. */
+export const visualColour = (p: Paint) => p.pattern?.base ?? p.color;
+
+export function teamPaint(abbr: string): Paint {
+  const t = TEAMS[abbr];
+  if (!t) return { color: FALLBACK.away.piece };
+  return t.pattern ? { color: t.piece, pattern: t.pattern } : { color: t.piece };
+}
+
+export function piecePaints(away: string, home: string, favourite?: string): Record<Side, Paint> {
   const a = TEAMS[away] ?? FALLBACK.away;
   const h = TEAMS[home] ?? FALLBACK.home;
-  if (oklabDistance(a.piece, h.piece) >= CLASH_DISTANCE) return { away: a.piece, home: h.piece };
-  if (favourite === away) return { away: a.piece, home: h.alt };
-  return { away: a.alt, home: h.piece }; // home team's own colour wins when neither is the favourite
+  const own = (abbr: string, t: TeamColour): Paint => (TEAMS[abbr] ? teamPaint(abbr) : { color: t.piece });
+  const pa = own(away, a), ph = own(home, h);
+  if (oklabDistance(visualColour(pa), visualColour(ph)) >= CLASH_DISTANCE) return { away: pa, home: ph };
+  if (favourite === away) return { away: pa, home: { color: h.alt } };
+  return { away: { color: a.alt }, home: ph }; // home team's own look wins when neither is the favourite
+}
+
+/** The colour each side reads as; kept for callers that only need a colour. */
+export function pieceColours(away: string, home: string, favourite?: string): Record<Side, string> {
+  const p = piecePaints(away, home, favourite);
+  return { away: visualColour(p.away), home: visualColour(p.home) };
+}
+
+/** CSS background for a small round mark. Pinstripes: a 1 px stripe every 3 px, readable down to 9 px. */
+export function cssFill(p: Paint): string {
+  if (p.pattern?.kind === 'pinstripe') {
+    return `repeating-linear-gradient(90deg, ${p.pattern.base} 0 2px, ${p.pattern.stripe} 2px 3px)`;
+  }
+  return p.color;
+}
+
+/** SVG fill and the <pattern> it needs. `id` must be unique in the document. */
+export function svgFill(p: Paint, id: string): { defs: string; fill: string } {
+  if (p.pattern?.kind !== 'pinstripe') return { defs: '', fill: p.color };
+  const { base, stripe } = p.pattern;
+  // Shapes are often rotated (base diamonds); rotate the pattern back so stripes stay vertical.
+  return {
+    defs: `<pattern id="${id}" patternUnits="userSpaceOnUse" width="3" height="3" patternTransform="rotate(-45)"><rect width="3" height="3" fill="${base}"/><rect width="1" height="3" fill="${stripe}"/></pattern>`,
+    fill: `url(#${id})`,
+  };
 }
 
 export function oklabDistance(x: string, y: string): number {

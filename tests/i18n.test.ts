@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildTimeline } from '../src/data/mlb/timeline.ts';
 import { detectLang, eventLine, LANGS, STRINGS } from '../src/i18n/index.ts';
-import { pieceColours } from '../src/styles/team-colors.ts';
+import { cssFill, pieceColours, piecePaints, svgFill, teamPaint } from '../src/styles/team-colors.ts';
 import type { GameEvent } from '../src/model/types.ts';
 import { FIXTURES, hasFixture, loadFixture } from './fixtures.ts';
 
@@ -49,9 +49,18 @@ describe('piece colours', () => {
   it('keeps both primaries when they differ', () => {
     expect(pieceColours('LAD', 'SF')).toEqual({ away: '#005A9C', home: '#FD5A1E' });
   });
-  it('treats two similar blues as a clash (Dodgers at Yankees)', () => {
-    expect(pieceColours('LAD', 'NYY')).toEqual({ away: '#EF3E42', home: '#003087' });
-    expect(pieceColours('LAD', 'NYY', 'LAD')).toEqual({ away: '#005A9C', home: '#E4002C' });
+  it('judges the Yankees by their pinstripes, so they no longer clash with blue teams', () => {
+    expect(piecePaints('NYY', 'TB').away.pattern).toEqual({ kind: 'pinstripe', base: '#F4F4F4', stripe: '#0C2340' });
+    expect(pieceColours('NYY', 'TB')).toEqual({ away: '#F4F4F4', home: '#092C5C' });
+    expect(pieceColours('LAD', 'NYY')).toEqual({ away: '#005A9C', home: '#F4F4F4' });
+  });
+  it('draws pinstripes in CSS and SVG, and plain colours as themselves', () => {
+    expect(cssFill(teamPaint('NYY'))).toContain('repeating-linear-gradient');
+    expect(cssFill(teamPaint('BOS'))).toBe('#BD3039');
+    const s = svgFill(teamPaint('NYY'), 'x');
+    expect(s.fill).toBe('url(#x)');
+    expect(s.defs).toContain('<pattern id="x"');
+    expect(svgFill(teamPaint('BOS'), 'x')).toEqual({ defs: '', fill: '#BD3039' });
   });
   it('on a clash, the favourite keeps its colour', () => {
     // PHI red and ATL scarlet clash

@@ -53,7 +53,7 @@ Want to make your own look? See [styles/](styles/): every style is one file, and
 
 - Basesmall is an independent fan project. It is **not affiliated with, endorsed by, or sponsored by** Major League Baseball, MLB Advanced Media, the MLB Players Association, or any team.
 - Game data comes from the MLB Stats API and is fetched directly by your own computer. It is subject to MLB Advanced Media's [copyright notice](http://gdx.mlb.com/components/copyright.txt), which permits individual, non-commercial, non-bulk use. Basesmall does not host, relay or redistribute MLB data, and this repository contains none.
-- No team logos, uniforms or league marks are used. Teams are shown by name, abbreviation and colour. Team colour values come from [colorr](https://github.com/lobsterbush/colorr) (MIT); see [NOTICE](styles/team-colors/NOTICE.md).
+- No team logos, wordmarks, numbers or league marks are used. Teams are shown by name, abbreviation, colour and, for a few teams, a simple pattern such as pinstripes. Team colour values come from [colorr](https://github.com/lobsterbush/colorr) (MIT); see [NOTICE](styles/team-colors/NOTICE.md).
 - Basesmall is free and will stay free: no ads and no paid features.
 
 ## Support

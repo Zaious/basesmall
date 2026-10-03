@@ -12,7 +12,7 @@ import { MlbReplaySource } from '../data/replay/mlb-replay-source.ts';
 import { GameStore } from '../model/store.ts';
 import type { GameState, Side } from '../model/types.ts';
 import { detectLang, eventLine, pitchLine, STRINGS } from '../i18n/index.ts';
-import { pieceColours } from '../styles/team-colors.ts';
+import { cssFill, piecePaints, svgFill, teamPaint, type Paint } from '../styles/team-colors.ts';
 import teamTable from '../../styles/team-colors/mlb.json' with { type: 'json' };
 import style from '../../styles/iso.json' with { type: 'json' };
 
@@ -33,8 +33,8 @@ const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } cat
 /** Team abbreviation, 'none', or null before the first choice. */
 let favorite = load('favorite');
 const fav = () => (favorite && favorite !== 'none' ? favorite : undefined);
-const TEAMS = Object.keys((teamTable as { teams: Record<string, { piece: string }> }).teams).sort();
-const teamPiece = (abbr: string) => (teamTable as { teams: Record<string, { piece: string }> }).teams[abbr]?.piece ?? '#9AA0AA';
+const TEAMS = Object.keys((teamTable as { teams: Record<string, unknown> }).teams).sort();
+const dot = (p: Paint) => `<i class="dot" style="background:${cssFill(p)}"></i>`;
 
 // ---------- window size per view ----------
 
@@ -115,7 +115,7 @@ function showChooser(): void {
   renderTabs(undefined);
   void fitWindow('chooser');
   const buttons = TEAMS.map((t) =>
-    `<button class="team" data-fav="${t}" aria-pressed="${t === favorite}"><i class="dot" style="background:${teamPiece(t)}"></i>${t}</button>`).join('');
+    `<button class="team" data-fav="${t}" aria-pressed="${t === favorite}">${dot(teamPaint(t))}${t}</button>`).join('');
   app.innerHTML = `<section class="chooser">
       <header><b>${esc(S.ui.chooseTeam)}</b></header>
       <p class="hint">${esc(S.ui.chooseTeamHint)}</p>
@@ -197,7 +197,7 @@ async function showPicker(): Promise<void> {
     .map((t) => `<button data-tab="${t}" aria-pressed="${t === pickerTab}">${esc(S.ui[t])} ${byTab[t].length}</button>`).join('');
   const rows = byTab[pickerTab].map((g) => {
     const away = g.teams.away.team.abbreviation ?? '?', home = g.teams.home.team.abbreviation ?? '?';
-    const c = pieceColours(away, home, fav());
+    const c = piecePaints(away, home, fav());
     const status = mapStatus(g.status);
     const when = pickerTab === 'later'
       ? new Date(g.gameDate).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
@@ -206,7 +206,7 @@ async function showPicker(): Promise<void> {
         : status === 'final' ? `${S.ui.replay} ▶` : S.status(status, g.status.detailedState);
     // Scores are never shown here: picking a finished game must not spoil it.
     return `<button class="row${mine(g) ? ' mine' : ''}" data-pk="${g.gamePk}" data-mode="${pickerTab === 'final' ? 'replay' : 'live'}" ${pickerTab === 'final' && status !== 'final' ? 'disabled' : ''}>
-      <span class="teams">${mine(g) ? '<span class="star">★</span>' : ''}<i class="dot" style="background:${c.away}"></i>${esc(away)} @ ${esc(home)}<i class="dot" style="background:${c.home}"></i></span>
+      <span class="teams">${mine(g) ? '<span class="star">★</span>' : ''}${dot(c.away)}${esc(away)} @ ${esc(home)}${dot(c.home)}</span>
       <span class="when">${esc(when)}</span></button>`;
   }).join('');
   app.querySelector('.picker')!.innerHTML = `${pickerHeader()}
@@ -225,6 +225,8 @@ let pitchText = '';
 let showPitch = false;
 let speed = 1;
 const SPEEDS = [1, 2, 4, 8];
+/** Dev aid (--seek=<entry> [--paused]): jump a replay to an entry once it has loaded. */
+let pendingSeek: { index: number; pause: boolean } | null = null;
 /** Tabs above the bar, each closable on its own. */
 const tabOn = { clock: load('tab-clock') !== 'off', replay: load('tab-replay') !== 'off' };
 const tabsEl = document.getElementById('tabs')!;
@@ -286,7 +288,17 @@ function follow(pk: number, how: 'live' | 'replay'): void {
 const formatLine = (l: { who?: string; text: string }) => `${l.who ? `<b>${esc(l.who)}</b> ` : ''}${esc(l.text)}`;
 
 store.subscribe({
-  onState: (s) => renderBar(s),
+  onState: (s) => {
+    const p = pendingSeek && mode === 'replay' ? replay.player(following) : undefined;
+    if (p && pendingSeek) {
+      const { index, pause } = pendingSeek;
+      pendingSeek = null;
+      if (pause) p.pause();
+      p.seek(index);
+      return;
+    }
+    renderBar(s);
+  },
   onEvent: (ev) => {
     if (ev.type === 'pitch') { pitchText = pitchLine(ev.pitch, lang); showPitch = true; return; }
     const line = eventLine(ev, lang);
@@ -310,17 +322,18 @@ function controls(): string {
 const lamps = (n: number, max: number, cls: string) =>
   Array.from({ length: max }, (_, i) => `<i class="lamp ${i < n ? cls : ''}"></i>`).join('');
 
-function diamond(s: GameState, colour: string): string {
+function diamond(s: GameState, paint: Paint): string {
   const at = { '1B': [25, 15], '2B': [15, 5], '3B': [5, 15] } as const;
+  const { defs, fill } = svgFill(paint, 'runner-fill');
   const sq = ([x, y]: readonly [number, number], on: boolean) =>
-    `<rect x="${x - 4}" y="${y - 4}" width="8" height="8" transform="rotate(45 ${x} ${y})" fill="${on ? colour : 'transparent'}" stroke="${on ? 'var(--text)' : 'var(--muted)'}" stroke-opacity="${on ? 0.8 : 0.6}" stroke-width="1.2"/>`;
-  return `<svg class="diamond" width="30" height="22" viewBox="0 0 30 22" aria-hidden="true">${
+    `<rect x="${x - 4}" y="${y - 4}" width="8" height="8" transform="rotate(45 ${x} ${y})" fill="${on ? fill : 'transparent'}" stroke="${on ? 'var(--text)' : 'var(--muted)'}" stroke-opacity="${on ? 0.8 : 0.6}" stroke-width="1.2"/>`;
+  return `<svg class="diamond" width="30" height="22" viewBox="0 0 30 22" aria-hidden="true">${defs ? `<defs>${defs}</defs>` : ''}${
     (Object.keys(at) as (keyof typeof at)[]).map((b) => sq(at[b], !!s.bases[b])).join('')}</svg>`;
 }
 
 function renderBar(s: GameState): void {
   const away = s.teams.away.abbr, home = s.teams.home.abbr;
-  const c = pieceColours(away, home, fav());
+  const c = piecePaints(away, home, fav());
   const bat: Side = s.half === 'top' ? 'away' : 'home';
   const conn = mode === 'live' ? live.status(following) : undefined;
   const statusText = s.status === 'live' ? '' : S.status(s.status, s.statusDetail);
@@ -329,7 +342,7 @@ function renderBar(s: GameState): void {
   // That leaves the right side for the latest pitch or play.
   app.innerHTML = `<div class="bar">
       <div class="sb">
-        <div class="l1"><i class="dot" style="background:${c.away}"></i><span class="muted">${esc(away)}</span>${s.score.away}<span class="muted">:</span>${s.score.home}<span class="muted">${esc(home)}</span><i class="dot" style="background:${c.home}"></i></div>
+        <div class="l1">${dot(c.away)}<span class="muted">${esc(away)}</span>${s.score.away}<span class="muted">:</span>${s.score.home}<span class="muted">${esc(home)}</span>${dot(c.home)}</div>
         <div class="l2"><span>${esc(S.inning(s.inning, s.half))}</span><span class="mono">${Math.min(3, s.balls)}-${Math.min(2, s.strikes)}</span><span class="lamps">${lamps(Math.min(3, s.outs), 3, 'o')}</span></div>
       </div>
       ${diamond(s, c[bat])}
@@ -401,11 +414,13 @@ async function start(): Promise<void> {
   const q = new URLSearchParams(location.search);
   if (inTauri) {
     for (const a of await invoke<string[]>('launch_args').catch(() => [] as string[])) {
-      const m = /^--(game|mode|team)=(.+)$/.exec(a);
+      const m = /^--(game|mode|team|seek)=(.+)$/.exec(a);
       if (m) q.set(m[1]!, m[2]!);
+      if (a === '--paused') q.set('paused', '1');
     }
   }
   if (q.has('team')) { favorite = q.get('team')!; save('favorite', favorite); }
+  if (q.has('seek')) pendingSeek = { index: Number(q.get('seek')), pause: q.has('paused') };
   if (q.has('game')) follow(Number(q.get('game')), q.get('mode') === 'replay' ? 'replay' : 'live');
   else if (favorite === null) showChooser();
   else void showPicker();

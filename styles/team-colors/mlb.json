@@ -1,5 +1,5 @@
 {
-  "$comment": "Piece colours per MLB team. piece = first non-white colour in the source palette; alt = next colour that is clearly different (OKLab distance > 0.15), used when two teams clash. Edit piece/alt by hand if a team reads wrong on the board.",
+  "$comment": "Piece colours per MLB team. piece = first non-white colour in the source palette; alt = next colour that is clearly different (OKLab distance > 0.15), used when two teams clash. pattern (optional) is a simple pattern drawn instead of the solid piece colour: only 'pinstripe' for now, with base and stripe colours; clashes are judged on the base colour. Colours and simple patterns only: no logos, letters, numbers or uniform art. Edit by hand or open a pull request if a team reads wrong.",
   "source": {
     "name": "colorr 1.1.0, data-raw/current.json",
     "url": "https://github.com/lobsterbush/colorr",
@@ -411,7 +411,12 @@
           "name": "Uniform Gray",
           "hex": "#C4CED3"
         }
-      ]
+      ],
+      "pattern": {
+        "kind": "pinstripe",
+        "base": "#F4F4F4",
+        "stripe": "#0C2340"
+      }
     },
     "PHI": {
       "id": 143,
