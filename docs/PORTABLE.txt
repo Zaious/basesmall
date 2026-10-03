@@ -1,0 +1,44 @@
+Basesmall: Baseball, but small.
+Portable version for Windows: nothing to install, no administrator rights needed.
+
+1. Unzip this folder anywhere you can write to (Desktop, Documents, a USB stick).
+2. Run Basesmall.exe.
+
+If Windows says "Windows protected your PC": the app is not code-signed yet.
+Click "More info", then "Run anyway". If the file came from the internet you can also
+right-click Basesmall.exe, choose Properties, and tick "Unblock" first.
+
+Needs the Microsoft Edge WebView2 Runtime. Windows 11 has it; most Windows 10 PCs
+get it with Edge. If Basesmall does not start, that is the usual reason.
+
+Settings are kept in %APPDATA%\io.github.zaious.basesmall\, and the web view's cache in
+%LOCALAPPDATA%\io.github.zaious.basesmall\. Delete those two folders and this one to remove
+every trace.
+
+Basesmall only talks to statsapi.mlb.com (game data) and, when you open Settings,
+api.github.com (to tell you about a newer version). It collects nothing.
+
+Unofficial fan project, not affiliated with MLB or any team. MIT licence: LICENSE.txt.
+Source and newer versions: https://github.com/Zaious/basesmall
+
+
+Basesmall 免安裝版（Windows）：不用安裝，也不需要系統管理員權限。
+
+1. 把這個資料夾解壓縮到任何你能寫入的地方（桌面、文件、隨身碟）。
+2. 執行 Basesmall.exe。
+
+如果 Windows 顯示「Windows 已保護您的電腦」：這個程式還沒有數位簽章。
+按「其他資訊」，再按「仍要執行」。從網路下載的檔案，也可以先在 Basesmall.exe 上按右鍵 →
+內容 → 勾選「解除封鎖」。
+
+需要 Microsoft Edge WebView2 執行階段。Windows 11 內建；大多數 Windows 10 會隨 Edge 一起裝好。
+Basesmall 打不開時，通常就是少了它。
+
+設定存在 %APPDATA%\io.github.zaious.basesmall\，網頁元件的快取在 %LOCALAPPDATA%\io.github.zaious.basesmall\。
+刪掉這兩個資料夾和這個資料夾，就不留任何痕跡。
+
+Basesmall 只連 statsapi.mlb.com（比賽資料），以及在你打開設定時連 api.github.com（告訴你有沒有新版）。
+它不收集任何資料。
+
+非官方的球迷專案，與 MLB 及任何球隊無關。MIT 授權：LICENSE.txt。
+原始碼與新版本：https://github.com/Zaious/basesmall

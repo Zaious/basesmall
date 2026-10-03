@@ -1,0 +1,31 @@
+name: Team colours
+description: A team's pieces look wrong
+title: "Colours: "
+labels: ["team colours"]
+body:
+  - type: input
+    id: team
+    attributes:
+      label: Team
+      description: Abbreviation or name, e.g. NYY
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What looks wrong
+      description: A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What it should be
+      description: Colours as hex codes (#0C2340), or a simple pattern such as pinstripes. No logos, letters, numbers or uniform art.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Where the colours come from (the team's brand page, for example), if you know.

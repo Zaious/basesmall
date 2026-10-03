@@ -45,6 +45,7 @@ import { zoneSvg } from '../render/zone.ts';
 import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption } from './views.ts';
 import { adoptView, homeView } from './home.ts';
 import { boardRows } from './scoreboard.ts';
+import { newerRelease } from './version.ts';
 import teamTable from '../../styles/team-colors/mlb.json' with { type: 'json' };
 
 const inTauri = '__TAURI_INTERNALS__' in window;
@@ -464,6 +465,9 @@ async function tensionHome(): Promise<void> {
 let settingsReturn: View = 'picker';
 let appVersion = '';
 let hotkeyError = false;
+/** A newer release, once asked for (at most once a session, when settings open: PRD §3.2.6). */
+let newer: { tag: string; url: string } | null = null;
+let askedForNewer = false;
 
 function showSettings(): void {
   if (view === 'settings') return;
@@ -474,6 +478,10 @@ function showSettings(): void {
   renderTabs(undefined);
   void fitWindow('settings');
   renderSettings();
+  if (!askedForNewer && appVersion) {
+    askedForNewer = true;
+    void newerRelease(appVersion).then((r) => { newer = r; if (r && view === 'settings') renderSettings(); });
+  }
 }
 
 function closeSettings(): void {
@@ -538,6 +546,7 @@ function renderSettings(): void {
 
         <h3>${esc(T.about)}</h3>
         <p class="about"><b>Basesmall</b> ${esc(appVersion)} · <i>Baseball, but small.</i><br>${esc(T.aboutText)}</p>
+        ${newer ? `<div class="srow"><button class="link" data-open="${esc(newer.url)}">⬆ ${esc(T.newVersion(newer.tag))}</button></div>` : ''}
         <div class="srow"><button class="link" data-open="https://buymeacoffee.com/zaious">☕ ${esc(T.support)}</button><button class="link" data-open="https://github.com/Zaious/basesmall">${esc(T.source)}</button></div>
         ${configFolder ? `<p class="note">${esc(T.stylesFolder)}: <span class="mono">${esc(configFolder)}${configFolder.includes('\\') ? '\\' : '/'}styles</span></p>` : ''}
       </div>
@@ -776,6 +785,7 @@ let gameGen = 0;
 
 function leaveGame(): void {
   gameGen++;
+  zoneState = undefined;
   store.stop();
   queue.clear();
   field?.dispose();
@@ -1107,7 +1117,9 @@ function buildGame(): void {
   if (field && 'ResizeObserver' in window) {
     partObserver = new ResizeObserver(() => {
       field?.resize();
-      if (shown) renderZone(shown, false);
+      // Redraw what the zone shows now: during a step that is already the new pitch, ahead of `shown`.
+      const z = zoneState ?? shown;
+      if (z) renderZone(z, false);
     });
     partObserver.observe(app.querySelector('.fieldwrap')!);
     const zone = app.querySelector('svg.zone');
@@ -1115,9 +1127,13 @@ function buildGame(): void {
   }
 }
 
+/** The state the strike zone last drew. */
+let zoneState: GameState | undefined;
+
 function renderZone(s: GameState, pop: boolean): void {
   const svg = app.querySelector<SVGSVGElement>('svg.zone');
   if (!svg) return;
+  zoneState = s;
   const r = svg.getBoundingClientRect();
   svg.innerHTML = zoneSvg(s.atBat, {
     w: r.width, h: r.height, iso: style.renderer === 'iso', theme: style.theme,

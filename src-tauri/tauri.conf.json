@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Basesmall",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "identifier": "io.github.zaious.basesmall",
   "build": {
     "devUrl": "http://localhost:1420",
@@ -28,14 +28,27 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://statsapi.mlb.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost https://statsapi.mlb.com https://api.github.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     }
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis"
-    ],
+    "targets": ["nsis", "dmg", "appimage", "deb"],
+    "publisher": "Zaious",
+    "copyright": "Copyright (c) 2026 Zaious. MIT License.",
+    "category": "Sports",
+    "shortDescription": "Baseball, but small.",
+    "longDescription": "An unofficial desktop companion that follows live MLB games as a few quiet, abstract pieces in a corner of your screen.",
+    "homepage": "https://github.com/Zaious/basesmall",
+    "resources": {
+      "../LICENSE": "LICENSE.txt",
+      "../THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

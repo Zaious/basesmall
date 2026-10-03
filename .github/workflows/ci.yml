@@ -1,0 +1,43 @@
+# Every push and pull request: types and tests on Linux, and a release build on a clean Windows
+# machine by the README's own commands (the M6 acceptance check: a fresh environment builds).
+# Tests that need recorded MLB games skip here: those recordings are never committed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run tauri build -- --no-bundle
+      - name: The app was built
+        shell: pwsh
+        run: Get-Item src-tauri/target/release/basesmall.exe | Format-List Name, Length

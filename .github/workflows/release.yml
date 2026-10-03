@@ -1,0 +1,75 @@
+# A version tag (v0.1.0) builds every platform into a DRAFT release: nothing is public until the
+# maintainer reads it and presses Publish. Windows: installer (per user, no admin) and a portable
+# zip. macOS and Linux: experimental builds, unsigned (PRD §3.2.6).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: --bundles nsis
+            rust_targets: ''
+          - os: macos-latest
+            args: --target universal-apple-darwin --bundles dmg
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - os: ubuntu-22.04
+            args: --bundles appimage,deb
+            rust_targets: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Linux libraries (web view, tray)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - name: Third-party licences for this platform
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then node scripts/third-party-licenses.mjs aarch64-apple-darwin; else node scripts/third-party-licenses.mjs; fi
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Basesmall ${{ github.ref_name }}
+          releaseBody: See CHANGELOG.md. macOS and Linux builds are experimental and unsigned.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+      - name: Windows portable zip (no install, no admin)
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $v = '${{ github.ref_name }}'.TrimStart('v')
+          $dir = "Basesmall_${v}_portable"
+          New-Item -ItemType Directory $dir | Out-Null
+          Copy-Item src-tauri/target/release/basesmall.exe "$dir/Basesmall.exe"
+          Copy-Item LICENSE "$dir/LICENSE.txt"
+          Copy-Item THIRD_PARTY_LICENSES.txt "$dir/THIRD_PARTY_LICENSES.txt"
+          Copy-Item docs/PORTABLE.txt "$dir/README.txt"
+          Compress-Archive -Path $dir -DestinationPath "Basesmall_${v}_x64_portable.zip"
+          gh release upload '${{ github.ref_name }}' "Basesmall_${v}_x64_portable.zip" --clobber

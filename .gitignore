@@ -10,3 +10,6 @@ dist/
 src-tauri/target/
 src-tauri/gen/
 src-tauri/target-next/
+
+# generated for each release by scripts/third-party-licenses.mjs
+THIRD_PARTY_LICENSES.txt

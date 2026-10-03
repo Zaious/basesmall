@@ -120,6 +120,7 @@ interface Strings {
     panels: string; panel: Record<'zone' | 'bases' | 'matchup' | 'linescore', string>;
     hotkeys: string; hotkeysOn: string; hide: string; hotkeyBad: string;
     seriesTab: string;
+    newVersion(tag: string): string;
   };
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
@@ -255,6 +256,7 @@ const zh: Strings = {
     panels: '選配視窗', panel: { zone: '好球帶', bases: '壘包', matchup: '投打對決', linescore: '逐局比分' },
     hotkeys: '熱鍵', hotkeysOn: '開啟熱鍵', hide: '隱藏／顯示', hotkeyBad: '這組按鍵無法使用（格式不對或已被佔用）',
     seriesTab: '系列賽',
+    newVersion: (tag) => `有新版 ${tag}，到下載頁`,
   },
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
@@ -389,6 +391,7 @@ const en: Strings = {
     panels: 'Extra windows', panel: { zone: 'Strike zone', bases: 'Bases', matchup: 'Matchup', linescore: 'Line score' },
     hotkeys: 'Hotkeys', hotkeysOn: 'Hotkeys on', hide: 'Hide / show', hotkeyBad: "That key combination can't be used (bad format or already taken)",
     seriesTab: 'Series',
+    newVersion: (tag) => `${tag} is out: get it`,
   },
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',

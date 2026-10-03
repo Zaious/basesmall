@@ -1,6 +1,6 @@
 [package]
 name = "basesmall"
-version = "0.0.0"
+version = "0.1.0"
 description = "Baseball, but small. Unofficial desktop companion for following live MLB games."
 license = "MIT"
 repository = "https://github.com/Zaious/basesmall"
