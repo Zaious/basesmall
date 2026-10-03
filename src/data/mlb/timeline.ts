@@ -112,6 +112,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
 
   const entries: TimelineEntry[] = [];
   const plays = feed.liveData.plays.allPlays;
+  const gameOver = mapStatus(feed.gameData.status) === 'final';
 
   for (const play of plays) {
     const { inning } = play.about;
@@ -133,6 +134,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
     lastPitcher[field] = pitcherId;
 
     const batter = ref(play.matchup.batter.id, play.matchup.batter.fullName);
+    const entriesBefore = entries.length;
     const atBat: PitchMark[] = [];
     const lastIndex = play.playEvents.at(-1)?.index;
 
@@ -274,6 +276,36 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
         },
       });
     }
+
+    // Live: a new batter is up but nothing has happened yet. Without this entry the board
+    // would still show the previous plate appearance (or the previous half-inning).
+    if (!gameOver && entries.length === entriesBefore && play === plays.at(-1) && !play.about.isComplete) {
+      const today = line.get(batter.id) ?? { ab: 0, h: 0 };
+      entries.push({
+        t: Math.max(lastT, Date.parse(play.about.startTime ?? '') || lastT),
+        play: play.about.atBatIndex,
+        event: -2,
+        events: pendingInning ? [{ type: 'inningChange', inning, half }] : [],
+        state: {
+          ...base,
+          status: 'live',
+          inning,
+          half,
+          outs: play.count.outs,
+          balls: play.count.balls,
+          strikes: play.count.strikes,
+          bases: Object.fromEntries([...bases].map(([b, id]) => [b, ref(id)])),
+          score: { ...score },
+          hits: { ...hits },
+          errors: { ...errors },
+          linescore: snapshotLinescore(runsByInning),
+          batter: { ...batter, side: hand(play.matchup.batSide?.code), today: { ...today } },
+          pitcher: { ...ref(pitcherId), hand: hand(play.matchup.pitchHand?.code), pitches: pitchCount.get(pitcherId) ?? 0 },
+          atBat: [],
+          teams,
+        },
+      });
+    }
   }
 
   repairTimestamps(entries);
@@ -283,7 +315,8 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
   if (last) {
     if (status === 'final') {
       last.state.status = 'live';
-      const end = reconcile({ ...last.state, status: 'final', ...(detail ? { statusDetail: detail } : {}) }, feed);
+      // Game over: clear the board (stranded runners, the last count) so a glance reads "final".
+      const end = reconcile({ ...last.state, status: 'final', ...(detail ? { statusDetail: detail } : {}), bases: {}, balls: 0, strikes: 0, atBat: [] }, feed);
       const winner: Side | 'tie' = end.score.away === end.score.home ? 'tie' : end.score.away > end.score.home ? 'away' : 'home';
       entries.push({ t: last.t, play: last.play, event: -1, events: [{ type: 'gameEnd', winner, score: { ...end.score } }], state: end });
     } else {

@@ -22,7 +22,7 @@ Basesmall is an unofficial desktop companion for following live MLB games. It si
 
 - [x] **M0** Data probe: endpoints, fields and update rates measured against real responses ([report, in Chinese](docs/PROBE_REPORT.md))
 - [x] **M1** Normalized game model and replay. Six recorded games are checked against MLB's own totals: runs, hits, errors, runs per inning, runners after every plate appearance, every pitcher's pitch count, and every batter's at-bats and hits.
-- [ ] **M2** Floating window (Tauri, Windows first) and live data
+- [~] **M2** Floating window (Tauri, Windows first) and live data: working on Windows; live measurement pending
 - [ ] **M3** The board: styles, team colours, size tiers, animation
 - [ ] **M4** Sound and settings
 - [ ] **M5** League scoreboard, postseason, low-key mode
@@ -37,7 +37,11 @@ npm install
 node scripts/probe/07-fixtures.mjs   # fetch a few finished games into fixtures/mlb/ (git-ignored)
 npm test
 npm run typecheck
+npm run tauri dev                     # the floating window; needs Rust and, on Windows, the MSVC build tools
+npm run tauri build -- --no-bundle    # release binary in src-tauri/target/release/
 ```
+
+Open a game directly: `basesmall --game=<gamePk>` follows it live, `--mode=replay` replays a finished one.
 
 The fixture script sends a handful of requests, one at a time, and caches every response so re-runs stay offline. MLB responses are never committed.
 

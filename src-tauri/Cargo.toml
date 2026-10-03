@@ -1,0 +1,26 @@
+[package]
+name = "basesmall"
+version = "0.0.0"
+description = "Baseball, but small. Unofficial desktop companion for following live MLB games."
+license = "MIT"
+repository = "https://github.com/Zaious/basesmall"
+edition = "2021"
+rust-version = "1.80"
+
+[lib]
+name = "basesmall_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-window-state = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

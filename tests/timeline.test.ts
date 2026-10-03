@@ -183,3 +183,10 @@ describe.skipIf(!hasFixture(849841))('pitch locations where tracking exists', ()
 function pick<T extends object, K extends keyof T>(o: T, keys: K[]): Pick<T, K> {
   return Object.fromEntries(keys.map((k) => [k, o[k]])) as Pick<T, K>;
 }
+
+describe.skipIf(!hasFixture(849841))('final state', () => {
+  it('clears runners and the count so the board reads as over', () => {
+    const end = buildTimeline(loadFixture(849841)).at(-1)!.state;
+    expect(end).toMatchObject({ status: 'final', bases: {}, balls: 0, strikes: 0, atBat: [] });
+  });
+});

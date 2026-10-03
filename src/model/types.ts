@@ -142,7 +142,8 @@ export interface TimelineEntry {
   t: number;
   /** Plate-appearance index within the game. */
   play: number;
-  /** Event index within the plate appearance; -1 for synthetic entries such as game end. */
+  /** Event index within the plate appearance. Synthetic entries: -1 game end, -2 a live plate
+   *  appearance that has started but has no events yet. */
   event: number;
   events: GameEvent[];
   state: GameState;

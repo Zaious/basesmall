@@ -140,6 +140,24 @@ linescore.offense keys: batter,onDeck,inHole,first,third,pitcher,battingOrder,te
 
 推算（輸入都是上表的實測值，未在直播中驗證）：一場 3 小時的比賽每 10 秒輪詢一次約 1,080 次。整包輪詢的傳輸量約落在 1,080 × 65–130 KB；改用 `diffPatch` 約 1,080 × 1.3 KB。**建議第一次取整包，之後用 `diffPatch`。** 直播時 `diffPatch` 只給 `startTimecode`、不給 `endTimecode` 的行為【未驗證】。
 
+## 5.1 `diffPatch` 一定要給終點（2026-10-03 補測）
+
+前面推算假設「只給 `startTimecode`」就能拿到到現在為止的差異。實測（849841，已結束的比賽）不是這樣：
+
+| 請求 | 回應 | gzip 後 |
+| --- | --- | --- |
+| `diffPatch?startTimecode=<最後一個時間碼>` | 整包 feed | 129,318 |
+| `diffPatch?startTimecode=<倒數第三個>`（不給終點） | 整包 feed | 129,318 |
+| `diffPatch?startTimecode=X&endTimecode=X`（同一個） | 整包 feed | 129,318 |
+| `feed/live/timestamps` | 514 個時間碼 | 1,461 |
+| `feed/live?fields=metaData,timeStamp,wait` | `{"metaData":{"wait":10,"timeStamp":"20260930_211903"}}` | 80 |
+
+所以輪詢改成兩段：
+1. 先送心跳 `feed/live?fields=metaData,timeStamp,wait`，約 80 bytes，回傳最新時間碼。
+2. 時間碼沒變就不再發請求；變了才送 `diffPatch?startTimecode=<我們的>&endTimecode=<最新>`。§5 已驗證這種寫法會回差異。
+
+兩球之間大多數的輪詢只花一次心跳。直播中這套方式的實際表現，留待直播量測（§8）。
+
 ## 6. CORS
 
 所有回應都帶：
@@ -150,7 +168,7 @@ access-control-allow-credentials: true
 access-control-allow-methods: GET, POST, PUT, DELETE, OPTIONS
 ```
 
-帶 `Origin: http://tauri.localhost` 送出時同樣回 `*`。純 GET 不帶自訂標頭屬於簡單請求，不會觸發預檢。所以 webview 直接 fetch 應該可行，抓取不一定要放在 Rust 端。這是依標頭推論；Tauri webview 內的實際行為在 M2 驗證。
+帶 `Origin: http://tauri.localhost` 送出時同樣回 `*`。純 GET 不帶自訂標頭屬於簡單請求，不會觸發預檢。所以 webview 直接 fetch 應該可行，抓取不一定要放在 Rust 端。**M2 已在 Tauri（WebView2 154）內驗證可行**：選場清單直接從 webview 抓到當天 4 場賽程，CSP 只開放 `connect-src https://statsapi.mlb.com`。
 
 ## 7. 各賽季資料完整度
 

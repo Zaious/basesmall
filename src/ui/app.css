@@ -1,0 +1,62 @@
+/* M2 minimal view. Colours come from a style file (styles/*.json) as CSS variables. */
+:root {
+  --background: #15171C; --panel: #1B1E24; --border: #2A2E37; --text: #E8EAEE; --muted: #A0A6B1;
+  --accent: #E8B04A; --ball: #8EC1F0; --strike: #D9643F; --out: #ECE8DF;
+  --away: #9AA0AA; --home: #5A606B;
+  --font: 'Segoe UI Variable', 'Segoe UI', 'Microsoft JhengHei UI', 'PingFang TC', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { color: var(--text); font: 13px/1.35 var(--font); user-select: none; -webkit-user-select: none; }
+
+#app { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 14px; }
+#app.bg-solid { background: var(--background); border: 1px solid var(--border); }
+#app.bg-semi { background: color-mix(in srgb, var(--background) 62%, transparent); border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+#app.bg-clear { background: transparent; border: 1px solid transparent; }
+#app.bg-clear:hover { border-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+
+.cap { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; white-space: nowrap; }
+.bg-solid .cap { background: var(--panel); }
+.bg-semi .cap { background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.bg-clear .cap { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--text) 75%, transparent); flex: 0 0 9px; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); }
+.lamps { display: inline-flex; gap: 3px; }
+.lamp { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 30%, transparent); }
+.lamp.b { background: var(--ball); } .lamp.s { background: var(--strike); } .lamp.o { background: var(--out); }
+button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; }
+
+/* game bar */
+.bar { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 12px; min-width: 0; }
+.bar .score { font: 600 14px var(--mono); gap: 5px; }
+.bar .last { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
+.bar .last b { color: var(--text); font-weight: 600; }
+.diamond { flex: 0 0 auto; }
+.conn { width: 7px; height: 7px; border-radius: 50%; background: var(--strike); flex: 0 0 7px; }
+.status { color: var(--accent); }
+
+/* hover controls */
+.controls { position: absolute; top: 6px; right: 8px; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--border); opacity: 0; pointer-events: none; transition: opacity .15s; }
+#app:hover .controls { opacity: 1; pointer-events: auto; }
+.controls button { height: 22px; padding: 0 9px; border-radius: 11px; color: var(--muted); }
+.controls button:hover { color: var(--text); background: var(--border); }
+
+/* picker */
+.picker { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 8px 10px 6px; gap: 6px; }
+.picker header { display: flex; align-items: center; gap: 6px; }
+.picker header .date { font-family: var(--mono); color: var(--muted); }
+.picker header .grow { flex: 1; }
+.tabs { display: flex; gap: 3px; }
+.tabs button { height: 22px; padding: 0 9px; border-radius: 11px; color: var(--muted); }
+.tabs button[aria-pressed='true'] { background: var(--border); color: var(--text); }
+.list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.row { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 9px; border-radius: 8px; text-align: left; width: 100%; }
+.row:hover { background: var(--panel); }
+.row .teams { font: 600 12px var(--mono); display: inline-flex; align-items: center; gap: 5px; }
+.row .when { margin-left: auto; color: var(--muted); font-size: 12px; }
+.empty { color: var(--muted); padding: 6px 4px; }
+
+#grip { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 10; }
+#grip::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); opacity: .45; }

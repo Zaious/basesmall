@@ -4,3 +4,8 @@ fixtures/mlb/
 
 # dependencies
 node_modules/
+
+# build output
+dist/
+src-tauri/target/
+src-tauri/gen/
