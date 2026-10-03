@@ -18,7 +18,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_window_state::Builder::default()
-                .with_state_flags(StateFlags::POSITION | StateFlags::SIZE)
+                // Size is per view (chooser, picker, score bar) and handled by the web view.
+                .with_state_flags(StateFlags::POSITION)
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![launch_args])
@@ -67,6 +68,13 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            if let Some(window) = app.get_webview_window("main") {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    let _ = window.show();
+                });
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

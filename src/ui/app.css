@@ -60,3 +60,42 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 
 #grip { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 10; }
 #grip::after { content: ''; position: absolute; right: 4px; bottom: 4px; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); opacity: .45; }
+
+/* controls are shown for a moment when a game opens, then on hover */
+#app.reveal .controls { opacity: 1; pointer-events: auto; }
+
+/* team chooser */
+.chooser { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-height: 0; overflow-y: auto; }
+.chooser .hint { margin: 0; color: var(--muted); font-size: 12px; }
+.chooser .teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+.chooser .team { height: 26px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; font: 600 12px var(--mono); }
+.chooser .team:hover { background: var(--panel); }
+.chooser .team[aria-pressed='true'] { background: var(--border); }
+.chooser .none { align-self: flex-start; font-family: var(--font); font-weight: 400; color: var(--muted); }
+.picker .fav { height: 22px; padding: 0 8px; border-radius: 11px; color: var(--accent); font: 600 12px var(--mono); }
+.picker .fav:hover { background: var(--panel); }
+.row.mine .teams { color: var(--accent); }
+.row .star { color: var(--accent); margin-right: 2px; }
+.empty.small { font-size: 11px; padding: 0 4px; }
+
+.clock { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
+.controls button[aria-pressed='false'] { opacity: .5; }
+
+/* two-line score block (prototype control bar) */
+.bar .sb { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
+.bar .sb .l1 { display: flex; align-items: center; gap: 5px; font: 600 14px var(--mono); }
+.bar .sb .l2 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.bar .sb .l2 .mono { font-size: 11px; }
+
+/* tabs above the score bar: clock, replay. Each closes on its own and does not take the main row. */
+#tabs { position: absolute; top: 0; left: 14px; right: 14px; height: 20px; display: none; gap: 4px; align-items: flex-end; z-index: 2; }
+body.has-tabs #tabs { display: flex; }
+body.has-tabs #app { top: 20px; }
+#tabs .tab { height: 20px; display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 9px; border-radius: 8px 8px 0 0;
+  border: 1px solid var(--border); border-bottom: 0; font-size: 11px; color: var(--muted); position: relative; top: 1px; }
+#tabs.bg-solid .tab { background: var(--background); }
+#tabs.bg-semi .tab { background: color-mix(in srgb, var(--background) 62%, transparent); }
+#tabs.bg-clear .tab { background: color-mix(in srgb, var(--panel) 88%, transparent); }
+#tabs .tab.accent { color: var(--accent); }
+#tabs .tab button { width: 16px; height: 16px; border-radius: 4px; padding: 0; line-height: 14px; color: var(--muted); opacity: .55; }
+#tabs .tab button:hover { opacity: 1; background: var(--border); color: var(--text); }

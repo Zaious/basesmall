@@ -2,7 +2,7 @@
 // structured events (never from MLB's English description), so both languages read naturally.
 // Player names are not translated.
 
-import type { GameEvent, GameStatus, Half } from '../model/types.ts';
+import type { GameEvent, GameStatus, Half, PitchMark } from '../model/types.ts';
 
 export type Lang = 'zh-Hant' | 'en';
 export const LANGS: readonly Lang[] = ['zh-Hant', 'en'];
@@ -21,6 +21,31 @@ const REASON_ZH: Record<string, string> = {
 
 type PA = Extract<GameEvent, { type: 'plateAppearance' }>;
 
+/** Every code in MLB's /api/v1/pitchTypes. */
+const PITCH_TYPE: Record<string, { zh: string; en: string }> = {
+  FA: { zh: '速球', en: 'Fastball' }, FF: { zh: '四縫線', en: '4-Seam' }, FT: { zh: '二縫線', en: '2-Seam' },
+  FC: { zh: '卡特', en: 'Cutter' }, FS: { zh: '指叉', en: 'Splitter' }, FO: { zh: '叉球', en: 'Forkball' },
+  SI: { zh: '伸卡', en: 'Sinker' }, ST: { zh: '橫掃', en: 'Sweeper' }, SL: { zh: '滑球', en: 'Slider' },
+  CU: { zh: '曲球', en: 'Curve' }, KC: { zh: '彈指曲', en: 'K-Curve' }, SC: { zh: '螺旋球', en: 'Screwball' },
+  GY: { zh: '陀螺球', en: 'Gyroball' }, SV: { zh: '滑曲', en: 'Slurve' }, CS: { zh: '慢曲', en: 'Slow curve' },
+  CH: { zh: '變速', en: 'Changeup' }, KN: { zh: '蝴蝶球', en: 'Knuckleball' }, EP: { zh: '慢速球', en: 'Eephus' },
+  UN: { zh: '不明', en: 'Unknown' }, IN: { zh: '故意壞球', en: 'Intentional ball' }, PO: { zh: '故意外角球', en: 'Pitchout' },
+  AB: { zh: '自動壞球', en: 'Automatic ball' }, AS: { zh: '自動好球', en: 'Automatic strike' }, NP: { zh: '未投球', en: 'No pitch' },
+};
+const CALL: Record<PitchMark['call'], { zh: string; en: string }> = {
+  ball: { zh: '壞球', en: 'Ball' }, calledStrike: { zh: '好球', en: 'Called strike' },
+  swingingStrike: { zh: '揮空', en: 'Swinging strike' }, foul: { zh: '界外', en: 'Foul' },
+  inPlay: { zh: '擊出', en: 'In play' }, hitByPitch: { zh: '觸身', en: 'Hit by pitch' }, other: { zh: '', en: '' },
+};
+
+/** "4-Seam 95 · Called strike": one pitch, short enough for the score bar. */
+export function pitchLine(p: PitchMark, lang: Lang): string {
+  const k = lang === 'zh-Hant' ? 'zh' : 'en';
+  const type = p.type ? PITCH_TYPE[p.type]?.[k] ?? p.type : '';
+  const speed = p.speed ? Math.round(p.speed) : '';
+  return [[type, speed].filter(Boolean).join(' '), CALL[p.call][k]].filter(Boolean).join(' · ');
+}
+
 interface Strings {
   inning(n: number, half: Half): string;
   outs(n: number): string;
@@ -33,7 +58,8 @@ interface Strings {
   automaticStrike: string;
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
-    'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed',
+    'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed' |
+    'play' | 'pause' | 'speed' | 'nextResult' | 'chooseTeam' | 'chooseTeamHint' | 'noFavorite' | 'favorite' | 'clock',
     string
   >;
 }
@@ -103,6 +129,9 @@ const zh: Strings = {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
     reconnecting: '連線中斷，重試中', replay: '重播', back: '回清單', pickGame: '選一場比賽',
     scoresHidden: '不顯示比分', prevDay: '前一天', nextDay: '後一天', loadFailed: '讀不到賽程，稍後重試',
+    play: '播放', pause: '暫停', speed: '速度', nextResult: '下一個結果',
+    chooseTeam: '你的主隊是？', chooseTeamHint: '主隊的比賽會排在最前面，撞色時主隊保留原色。之後可以改。',
+    noFavorite: '不指定', favorite: '主隊', clock: '比賽經過時間',
   },
 };
 
@@ -170,6 +199,9 @@ const en: Strings = {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',
     reconnecting: 'Connection lost, retrying', replay: 'Replay', back: 'Back', pickGame: 'Pick a game',
     scoresHidden: 'Scores hidden', prevDay: 'Previous day', nextDay: 'Next day', loadFailed: "Couldn't load the schedule, retrying",
+    play: 'Play', pause: 'Pause', speed: 'Speed', nextResult: 'Next result',
+    chooseTeam: 'Which team is yours?', chooseTeamHint: 'Its games come first, and it keeps its colour when two teams clash. You can change this later.',
+    noFavorite: 'No team', favorite: 'My team', clock: 'Game time',
   },
 };
 

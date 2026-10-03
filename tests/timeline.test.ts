@@ -190,3 +190,13 @@ describe.skipIf(!hasFixture(849841))('final state', () => {
     expect(end).toMatchObject({ status: 'final', bases: {}, balls: 0, strikes: 0, atBat: [] });
   });
 });
+
+describe.skipIf(!hasFixture(849841))('game clock', () => {
+  it('knows when the game started, when each moment was, and how long it lasted', () => {
+    const timeline = buildTimeline(loadFixture(849841));
+    const first = timeline[0]!.state, end = timeline.at(-1)!.state;
+    expect(first.startedAt).toBe(Date.parse('2026-09-30T18:16:00.000Z'));
+    expect(timeline.every((e) => e.state.at === e.t)).toBe(true);
+    expect(end.durationMinutes).toBe(183);
+  });
+});

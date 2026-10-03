@@ -55,6 +55,7 @@ export function initialState(feed: MlbFeed): GameState {
     errors: { away: 0, home: 0 },
     linescore: { away: [], home: [] },
     atBat: [],
+    ...(Date.parse(feed.gameData.gameInfo?.firstPitch ?? '') ? { startedAt: Date.parse(feed.gameData.gameInfo!.firstPitch!) } : {}),
   };
 }
 
@@ -309,6 +310,12 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
   }
 
   repairTimestamps(entries);
+  const firstT = entries[0]?.t;
+  for (const e of entries) {
+    e.state.at = e.t;
+    // No firstPitch in the feed yet (it can lag the first pitch): fall back to the first event.
+    if (e.state.startedAt === undefined && firstT !== undefined) e.state.startedAt = firstT;
+  }
   const status = mapStatus(feed.gameData.status);
   const detail = feed.gameData.status.detailedState;
   const last = entries.at(-1);
@@ -316,7 +323,8 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
     if (status === 'final') {
       last.state.status = 'live';
       // Game over: clear the board (stranded runners, the last count) so a glance reads "final".
-      const end = reconcile({ ...last.state, status: 'final', ...(detail ? { statusDetail: detail } : {}), bases: {}, balls: 0, strikes: 0, atBat: [] }, feed);
+      const minutes = feed.gameData.gameInfo?.gameDurationMinutes;
+      const end = reconcile({ ...last.state, status: 'final', ...(detail ? { statusDetail: detail } : {}), ...(minutes ? { durationMinutes: minutes } : {}), bases: {}, balls: 0, strikes: 0, atBat: [] }, feed);
       const winner: Side | 'tie' = end.score.away === end.score.home ? 'tie' : end.score.away > end.score.home ? 'away' : 'home';
       entries.push({ t: last.t, play: last.play, event: -1, events: [{ type: 'gameEnd', winner, score: { ...end.score } }], state: end });
     } else {

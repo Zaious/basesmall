@@ -126,6 +126,8 @@ export interface MlbFeed {
     teams: { away: MlbTeam; home: MlbTeam };
     players?: Record<string, { id: number; fullName?: string; lastName?: string; boxscoreName?: string }>;
     datetime?: { officialDate?: string };
+    /** firstPitch is set once the game starts; gameDurationMinutes once it ends (delays excluded). */
+    gameInfo?: { firstPitch?: string; gameDurationMinutes?: number };
   };
   liveData: {
     plays: { allPlays: MlbPlay[] };

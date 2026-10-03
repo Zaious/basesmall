@@ -130,6 +130,12 @@ export interface GameState {
   pitcher?: PitcherState;
   /** Pitches of the current plate appearance. */
   atBat: PitchMark[];
+  /** Epoch ms of the first pitch, for the game clock. */
+  startedAt?: number;
+  /** Epoch ms of the moment this state describes (the event's time). */
+  at?: number;
+  /** Official length of a finished game, delays excluded. */
+  durationMinutes?: number;
 }
 
 /**
