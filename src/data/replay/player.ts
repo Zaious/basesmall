@@ -36,6 +36,9 @@ export class ReplayPlayer {
   private cursor = 0;
   private current = -1;
   private timer: unknown = null;
+  /** Bumped by every pause and re-arm. A listener may pause or seek while an entry is being
+   *  delivered; the timer that delivered it must then not schedule the next one too. */
+  private generation = 0;
   private anchor = 0;
   private speed: number;
   private pace: PaceMode;
@@ -81,6 +84,7 @@ export class ReplayPlayer {
   pause(): void {
     if (this.timer !== null) this.clock.clearTimeout(this.timer);
     this.timer = null;
+    this.generation++;
   }
 
   /** Jump to an entry and deliver it as a snap. Keeps playing if it was playing. */
@@ -112,6 +116,7 @@ export class ReplayPlayer {
   }
 
   private arm(): void {
+    const gen = ++this.generation;
     if (this.done) {
       this.timer = null;
       for (const fn of this.endListeners) fn();
@@ -120,9 +125,11 @@ export class ReplayPlayer {
     const slot = this.slots[this.cursor]!;
     const wait = Math.max(0, this.anchor + slot.at / this.speed - this.clock.now());
     this.timer = this.clock.setTimeout(() => {
+      if (gen !== this.generation) return;
       this.cursor++;
       this.emit(slot.index, false);
-      this.arm();
+      // Still ours: nobody paused, sought or re-armed while the entry was delivered.
+      if (gen === this.generation) this.arm();
     }, wait);
   }
 

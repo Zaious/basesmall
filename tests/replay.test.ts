@@ -52,6 +52,31 @@ describe.skipIf(!hasFixture(849841))('ReplayPlayer on 849841', () => {
     expect(seen).toEqual([[200, true], [201, false]]);
   });
 
+  it('a seek from inside an entry callback does not schedule the next entry twice', () => {
+    const clock = new FakeClock();
+    const player = new ReplayPlayer(timeline, { clock, pace: { kind: 'fixed', seconds: 1 } });
+    const seen: [number, boolean][] = [];
+    let jumped = false;
+    player.onEntry((_, info) => {
+      seen.push([info.index, info.snap]);
+      if (!jumped) { jumped = true; player.seek(100); } // what the app's --seek does
+    });
+    player.play();
+    clock.advance(3_500);
+    expect(seen).toEqual([[0, false], [100, true], [101, false], [102, false], [103, false]]);
+  });
+
+  it('a pause from inside an entry callback holds', () => {
+    const clock = new FakeClock();
+    const player = new ReplayPlayer(timeline, { clock, pace: { kind: 'fixed', seconds: 1 } });
+    const seen: number[] = [];
+    player.onEntry((_, info) => { seen.push(info.index); if (info.index === 2) player.pause(); });
+    player.play();
+    clock.advance(10_000);
+    expect(seen).toEqual([0, 1, 2]);
+    expect(player.playing).toBe(false);
+  });
+
   it('speed 4x plays a fixed 4 s pace one entry per second', () => {
     const clock = new FakeClock();
     const player = new ReplayPlayer(timeline, { clock, pace: { kind: 'fixed', seconds: 4 }, speed: 4 });
