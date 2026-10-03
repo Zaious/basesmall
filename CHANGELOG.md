@@ -10,7 +10,7 @@ The first release.
 - Follows your team on its own: the game when it is on, otherwise a countdown with probable starters; once its season is over, your choice of what to watch.
 - League scoreboard drawer, postseason series labels, a tab for another game's big moment.
 - Notices as corner cards or a ticker, never taking focus. Synthesized sounds, off by default.
-- Low-key mode and hotkeys (Ctrl+Alt+Shift+B to hide, Ctrl+Alt+Shift+L for low-key).
+- Low-key mode and hotkeys (Ctrl+Alt+Shift+B to hide, Ctrl+Alt+Shift+L for low-key; ⌥⇧⌘B and ⌥⇧⌘L on macOS).
 - Optional strike zone, bases, matchup and line score windows.
 - Catch up on a game joined late.
 - English and Traditional Chinese.

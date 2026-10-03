@@ -46,6 +46,7 @@ import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchup
 import { adoptView, homeView } from './home.ts';
 import { boardRows } from './scoreboard.ts';
 import { newerRelease } from './version.ts';
+import { keyLabel } from './keys.ts';
 import teamTable from '../../styles/team-colors/mlb.json' with { type: 'json' };
 
 const inTauri = '__TAURI_INTERNALS__' in window;
@@ -146,11 +147,27 @@ async function fitWindow(v: View): Promise<void> {
   let size = savedSize(sizeKey(v), v === 'game' && cfg().lowKey ? LOW_KEY_SIZE : DEFAULT_SIZE[v]);
   if (v === 'game' && dev.tier && !cfg().lowKey) size = TIER_PRESET[dev.tier];
   if (v !== 'game' && v !== 'home') size = { w: Math.max(size.w, 320), h: Math.max(size.h, LIST_MIN_HEIGHT) };
-  programmaticResize = Date.now();
-  await win.setSize(new LogicalSize(size.w, size.h + extraH(v)));
+  await resizeTo(size.w, size.h + extraH(v));
   // The window starts hidden so it never flashes at the wrong size.
   if (!hiddenByKey) await win.show();
 }
+
+/**
+ * Resize, keeping the top-left corner where it is. macOS resized the still-hidden window at start
+ * about its bottom-left corner, so every launch moved it down by the difference from the configured
+ * height (measured: 44 pt per launch, 160 to 116).
+ */
+async function resizeTo(w: number, h: number): Promise<void> {
+  if (!win) return;
+  const at = await win.outerPosition();
+  programmaticResize = Date.now();
+  await win.setSize(new LogicalSize(w, h));
+  const now = await win.outerPosition();
+  if (now.x !== at.x || now.y !== at.y) await win.setPosition(at);
+}
+
+/** The game view's size, wherever the window is now: the optional windows line up beside it. */
+const gameSize = (): Size => (cfg().lowKey ? savedSize('size-lowkey', LOW_KEY_SIZE) : savedSize('size-game', DEFAULT_SIZE.game));
 
 if (win) {
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -175,8 +192,7 @@ async function cycleTier(): Promise<void> {
   const w = Math.max(size.w, TIER_MIN_WIDTH[next]);
   // A saved size from the edge of a tier could fall into the neighbouring one; keep the tier asked for.
   const h = tierOf(size.h) === next ? size.h : TIER_PRESET[next].h;
-  programmaticResize = Date.now();
-  await win.setSize(new LogicalSize(w, h + extraH('game')));
+  await resizeTo(w, h + extraH('game'));
   saveSize('size-game', { w, h });
 }
 
@@ -206,9 +222,11 @@ const cardsByPk = new Map<number, GameCard>();
 const remember = (cards: readonly GameCard[]) => { for (const c of cards) cardsByPk.set(c.gamePk, c); };
 document.addEventListener('visibilitychange', () => live.setBackground(document.hidden));
 const setTitle = (t: string) => { document.title = t; void win?.setTitle(t); };
+/** Accelerator text ("CmdOrCtrl+Alt+Shift+B") reads as nothing on a Mac; settings add ⌥⇧⌘B there. */
+const isMac = /Mac/.test(navigator.userAgent);
 const sounds = new Sounds();
 const notifier = inTauri ? new Notifier() : null;
-const panels = inTauri ? new Panels((name) => savedSize(`size-panel-${name}`, PANEL_SIZE[name])) : null;
+const panels = inTauri ? new Panels((name) => savedSize(`size-panel-${name}`, PANEL_SIZE[name]), () => gameSize().w) : null;
 
 // ---------- team chooser ----------
 
@@ -536,8 +554,8 @@ function renderSettings(): void {
 
         <h3>${esc(T.hotkeys)}</h3>
         <div class="srow">${check('hotkeys.on', c.hotkeys.on, T.hotkeysOn)}</div>
-        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(T.hide)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.hide" value="${esc(c.hotkeys.hide)}"></div>
-        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(S.follow.lowKey)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.lowKey" value="${esc(c.hotkeys.lowKey)}"></div>
+        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(T.hide)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.hide" value="${esc(c.hotkeys.hide)}">${isMac ? `<span class="keyhint">${esc(keyLabel(c.hotkeys.hide, true))}</span>` : ''}</div>
+        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(S.follow.lowKey)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.lowKey" value="${esc(c.hotkeys.lowKey)}">${isMac ? `<span class="keyhint">${esc(keyLabel(c.hotkeys.lowKey, true))}</span>` : ''}</div>
         ${hotkeyError ? `<p class="note">${esc(T.hotkeyBad)}</p>` : ''}
 
         <h3>${esc(T.replay)}</h3>
@@ -729,12 +747,12 @@ function renderTabs(s: GameState | undefined): void {
     if (catchUp) items.push(`<span class="tab accent">⏩ ${esc(S.follow.catchingUp)}</span>`);
     else if (tabs.replay && mode === 'replay' && !narrow) {
       const date = dates.get(s.gamePk);
-      items.push(`<span class="tab accent">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}<button data-close="replay" aria-label="×">×</button></span>`);
+      items.push(`<span class="tab accent"><span class="tx">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}</span><button data-close="replay" aria-label="×">×</button></span>`);
     }
     const card = cardsByPk.get(s.gamePk);
     // The series standing in a replay would spoil the game's result: live only.
     if (tabs.series && card?.series && mode === 'live' && !narrow) {
-      items.push(`<span class="tab">${esc(S.series(card.series, card.gameType, { away: card.away.abbr, home: card.home.abbr }))}<button data-close="series" aria-label="×">×</button></span>`);
+      items.push(`<span class="tab"><span class="tx">${esc(S.series(card.series, card.gameType, { away: card.away.abbr, home: card.home.abbr }))}</span><button data-close="series" aria-label="×">×</button></span>`);
     }
     if (elsewhere && !narrow) {
       const c = elsewhere.card;

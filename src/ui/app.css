@@ -14,6 +14,9 @@ body { color: var(--text); font: 13px/1.35 var(--font); user-select: none; -webk
 #app.bg-semi { background: color-mix(in srgb, var(--background) 62%, transparent); border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 #app.bg-clear { background: transparent; border: 1px solid transparent; }
 #app.bg-clear:hover { border-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+/* The see-through looks are for glancing at a game. Pages you read and choose from stay solid. */
+#app.bg-semi:has(> .settings, > .picker, > .chooser),
+#app.bg-clear:has(> .settings, > .picker, > .chooser) { background: var(--background); border-color: var(--border); }
 #app[data-tier='dot'] { border-radius: 999px; }
 
 /* Capsules carry their own background, so text stays readable on any wallpaper. */
@@ -207,6 +210,7 @@ body.has-board #app { bottom: 154px; }
 .settings .note .mono { user-select: all; -webkit-user-select: all; }
 .settings .chip { display: inline-flex; align-items: center; gap: 2px; }
 .settings input.key { flex: 1; min-width: 160px; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: 12px var(--mono); }
+.settings .keyhint { color: var(--muted); font: 12px var(--mono); }
 .row .score { font: 600 12px var(--mono); color: var(--muted); margin-left: auto; }
 .row .score + .when { margin-left: 8px; }
 
@@ -217,6 +221,8 @@ body.has-tabs #tabs { display: flex; }
 body.has-tabs #app { top: 20px; }
 #tabs .tab { height: 20px; display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 9px; border-radius: 8px 8px 0 0; min-width: 0; overflow: hidden; white-space: nowrap; flex: 0 1 auto;
   border: 1px solid var(--border); border-bottom: 0; font-size: 11px; color: var(--muted); position: relative; top: 1px; }
+/* When the controls squeeze the tabs, the label gives way, not the close button. */
+#tabs .tab .tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 #tabs.bg-solid .tab { background: var(--background); }
 #tabs.bg-semi .tab { background: color-mix(in srgb, var(--background) 62%, transparent); }
 #tabs.bg-clear .tab { background: color-mix(in srgb, var(--panel) 88%, transparent); }

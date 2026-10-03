@@ -514,12 +514,38 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 
 - **版本**：0.1.0（`package.json`、`Cargo.toml`、`tauri.conf.json`）。
 - **Windows**：NSIS 安裝檔設成只裝給目前使用者（`installMode: currentUser`），不需要系統管理員權限；另有免安裝 zip（`Basesmall.exe`、授權、`docs/PORTABLE.txt` 當說明）。兩者都沒有程式碼簽章，README 與 zip 內的說明寫了「Windows 已保護您的電腦」怎麼過。都需要 WebView2。
-- **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性，未在實機測試。macOS 版用 ad-hoc 簽章（`bundle.macOS.signingIdentity: "-"`）：Apple Silicon 上從網路下載、完全沒簽章的 App 會被說成「已損毀」而且沒有放行的按鈕；ad-hoc 簽章後仍未公證，使用者第一次要到「隱私權與安全性」按「強制打開」。第一次發版的 dmg 裡沒有 `_CodeSignature`，因此補上。
+- **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性。Linux 未在實機測試；macOS 在一台 Intel Mac 上測過（見下）。macOS 版用 ad-hoc 簽章（`bundle.macOS.signingIdentity: "-"`）：Apple Silicon 上從網路下載、完全沒簽章的 App 會被說成「已損毀」而且沒有放行的按鈕；ad-hoc 簽章後仍未公證，使用者第一次要到「隱私權與安全性」按「強制打開」。第一次發版的 dmg 裡沒有 `_CodeSignature`，因此補上。
 - **自動建置**：`.github/workflows/ci.yml` 每次推送跑型別檢查與測試（Linux），並在乾淨的 Windows 機器上照 README 的指令建置。這就是「全新環境照 README 一個指令跑起來」的驗收。`.github/workflows/release.yml` 在推版本標籤時建置三個平台，結果放進一個**草稿**發布，維護者看過按「發布」才公開。
 - **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。它只在 `src-tauri/tauri.release.conf.json` 裡列為打包資源：放在主設定的話，Tauri 的 build script 在任何建置（包括 `tauri dev`）都要求檔案存在，乾淨的 clone 照 README 建置會直接失敗（CI 第一次跑就是這樣失敗的）。腳本先 `cargo fetch`，因為授權全文在下載下來的原始碼裡，全新的機器還沒有。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
 - **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。
 - **文件**：README 重寫（下載、Windows 警告、隱私、使用方式、從原始碼建置）；`CONTRIBUTING.md`（隊色、風格、錯誤回報、程式規則、**如何接其他聯盟**）；`CHANGELOG.md`；issue 範本（隊色、錯誤回報）。
 - **展示**：README 用一場真實比賽（2026 美聯外卡第 2 戰，Bellinger 的三分砲）錄成 GIF，加一張四種尺寸的圖。錄製時在程式後面墊一個純色視窗，避免桌面上其他東西入鏡；每一格都自動檢查邊框外是否只有底色，不合格的整批刪掉重錄（錄製時就抓到兩次：一次底色視窗被其他視窗蓋過，一次底色視窗沒跟著程式變大）。
+
+**macOS 實機測試**（Intel Core i5、macOS 26.2，草稿裡的 universal dmg，透過 SSH 操作與截圖）：
+
+| 項目 | 結果 |
+| --- | --- |
+| 簽章與 Gatekeeper | 整個 App `not signed at all`（arm64 那一半只有連結器自動加的簽章）；`spctl` 判 `rejected / no usable signature`。標成網路下載後打開：「未打開『Basesmall』」，只有「完成」與「丟到垃圾桶」；在「隱私權與安全性」按「強制打開」後可以執行 |
+| 啟動、主隊卡片 | 正常；介面跟著系統用繁中，時間是當地時區 |
+| 透明與圓角 | 正常（沒開 `macOSPrivateApi` 也透明） |
+| 置頂 | 視窗層級 5（一般視窗是 0） |
+| 熱鍵 ⌥⇧⌘B | 隱藏 → 顯示，正常 |
+| 系統匣 | 選單列有圖示，左鍵開選單，各項可用；「結束」後程序全部退出 |
+| 重播、棋盤、好球帶、打者名字 | 正常，加速到 8× 正常 |
+| 四種尺寸（36、90、180、380 高） | 都切對檔位，沒有破版 |
+| 通知卡片 | 右下角出現，不搶焦點 |
+| 設定、背景三種、關於 | 正常；查新版在沒有正式發布時安靜 |
+| 選配視窗 | 四個都會開（位置問題見下） |
+| 滑鼠穿透 | 開時點擊穿過視窗，關掉後點擊恢復 |
+| 未測 | 音效（聽不到）、Apple Silicon、直播中的比賽、開外部連結 |
+
+這次實測發現並修正：
+
+- **每次啟動視窗往下掉 44 點**（只有 macOS）：主視窗以設定檔的高度 160 隱藏建立，啟動時縮成主隊卡片的 116，macOS 以左下角為準縮放，上緣就往下移，位置又被存起來，所以一次比一次低（實測 200 → 244 → 288 → 332）。改成程式調整大小時一律保持左上角（`resizeTo`）。
+- **在設定頁勾選配視窗，視窗會蓋住比賽**（各平台）：位置照「主視窗目前的寬度」算，但設定頁的主視窗比較窄（400 對 480）。改成照比賽畫面的寬度。Windows 上重現與驗證：修正前選配視窗疊進主視窗 108 實體像素，修正後正好在右邊 8 點。
+- **全透明或半透明背景時，設定頁與選場清單也是透明的**，字疊在桌面上看不清（各平台）。設定、選場、選主隊這些要讀、要選的頁面一律實底。
+- **熱鍵在 Mac 上寫成 `CmdOrCtrl+Alt+Shift+B`**：設定頁在 Mac 上另外寫出 ⌥⇧⌘B（`src/ui/keys.ts`）；README 的熱鍵表加了 macOS 一欄。
+- **控制列出現時，重播頁籤的關閉鈕被擠掉**（各平台）：頁籤縮窄時改成文字省略，關閉鈕留著。
 
 錄展示時發現並修正：好球帶在播放動畫時會慢一步（顯示前一球的狀態）。原因是好球帶欄位是 flex 子元素、預設 `min-width: auto`，較長的說明文字會把欄位撐寬，觸發尺寸觀察器，觀察器又用「文字目前顯示的狀態」重畫好球帶，而那個狀態在動畫期間還是上一步。修法：欄位設 `min-width: 0`，觀察器改用好球帶自己上次畫的狀態。
 

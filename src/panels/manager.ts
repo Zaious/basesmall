@@ -12,9 +12,15 @@ export class Panels {
   private frame: PanelFrame | null = null;
   private hidden = false;
   private readonly sizeOf: (name: PanelName) => Size;
+  private readonly mainWidth: () => number;
 
-  constructor(sizeOf: (name: PanelName) => Size) {
+  /**
+   * `mainWidth` is the main window's width in the game view. Panels are often switched on in
+   * settings, where the main window is narrower: placed by its width then, they covered the game.
+   */
+  constructor(sizeOf: (name: PanelName) => Size, mainWidth: () => number) {
     this.sizeOf = sizeOf;
+    this.mainWidth = mainWidth;
     // A panel that starts (or restarts) asks for the current frame.
     void listen<PanelName>('panel-ready', (e) => {
       if (this.frame) void emitTo(panelLabel(e.payload), 'panel-frame', this.frame);
@@ -78,14 +84,13 @@ export class Panels {
     const main = getCurrentWindow();
     const scale = await main.scaleFactor();
     const pos = (await main.outerPosition()).toLogical(scale);
-    const mainSize = (await main.outerSize()).toLogical(scale);
     // A column beside the main window, each below the one before, so none covers another.
     const above = PANELS.slice(0, PANELS.indexOf(name)).reduce((y, p) => y + this.sizeOf(p).h + 8, 0);
     // Resolve once the window exists (or failed to), so a close right after an open finds it.
     await new Promise<void>((resolve) => {
       const w = new WebviewWindow(panelLabel(name), {
         url: `panel.html#${name}`,
-        x: Math.round(pos.x + mainSize.width + 8), y: Math.round(pos.y + above),
+        x: Math.round(pos.x + this.mainWidth() + 8), y: Math.round(pos.y + above),
         width: size.w, height: size.h, minWidth: 80, minHeight: 36,
         visible: !this.hidden, focus: false, focusable: false,
         decorations: false, transparent: true, shadow: false, resizable: true,

@@ -10,7 +10,7 @@ Basesmall is an unofficial desktop companion for following live MLB games. It si
 
 *A replay of the 2026 AL Wild Card Series, Game 2: Boston walks Rice to face Bellinger, who hits a three-run home run.*
 
-> **Status: first release (v0.1).** Windows is the main platform. macOS and Linux builds are experimental: they are built automatically but nobody has tested them on a real machine yet.
+> **Status: first release (v0.1).** Windows is the main platform. macOS and Linux builds are experimental: macOS has been tried on one Intel Mac, Linux not on a real machine yet.
 
 ## Download
 
@@ -47,10 +47,10 @@ Basesmall needs the Microsoft Edge WebView2 Runtime, which Windows 11 includes a
 
 In a game, hover over the window for the controls: **⤢** size, **◇** style, **▤** scoreboard, **◱** low-key mode, **⏩** catch up, **⚙** settings, **‹** back to the game list. The tray icon has the same and more: show or hide, click-through, always on top, background.
 
-| Key | Does |
-| --- | --- |
-| Ctrl+Alt+Shift+B | Hide or show every Basesmall window |
-| Ctrl+Alt+Shift+L | Low-key mode on or off |
+| Windows, Linux | macOS | Does |
+| --- | --- | --- |
+| Ctrl+Alt+Shift+B | ⌥⇧⌘B | Hide or show every Basesmall window |
+| Ctrl+Alt+Shift+L | ⌥⇧⌘L | Low-key mode on or off |
 
 Both can be changed or switched off in settings. Settings live in `settings.json` in the app's config folder (on Windows `%APPDATA%\io.github.zaious.basesmall\`). Custom styles go in its `styles` folder.
 
