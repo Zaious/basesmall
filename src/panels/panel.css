@@ -9,6 +9,8 @@
 #panel.bg-clear svg.zone { background: color-mix(in srgb, var(--panel) 80%, transparent); }
 #panel .pcap { display: flex; height: 22px; flex: 0 0 22px; font-size: 11px; justify-content: center; gap: 5px; padding: 0 7px; align-items: center; border-radius: 999px; }
 #panel.bg-solid .pcap, #panel.bg-solid .cap { background: var(--panel); }
+#panel .who { display: flex; align-items: center; gap: 6px; height: 18px; flex: 0 0 18px; padding: 0 4px; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+#panel .who b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 #panel .mu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; align-items: center; }
 #panel.matchup, #panel.linescore { justify-content: center; }
 #close { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 5px; padding: 0; line-height: 16px; color: var(--muted);

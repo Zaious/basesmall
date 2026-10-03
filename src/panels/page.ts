@@ -7,7 +7,7 @@ import { emit } from '@tauri-apps/api/event';
 import { STRINGS } from '../i18n/index.ts';
 import { FieldRenderer } from '../render/field-svg.ts';
 import { zoneSvg } from '../render/zone.ts';
-import { linescoreView, matchupView, pitchCaption } from '../ui/views.ts';
+import { esc, linescoreView, matchupView, pitchCaption } from '../ui/views.ts';
 import { unpackPlan, type PanelFrame } from './frame.ts';
 import type { PanelName } from '../settings/schema.ts';
 
@@ -26,10 +26,15 @@ function applyLook(f: PanelFrame): void {
 }
 
 function drawZone(f: PanelFrame, pop: boolean): void {
-  if (!root.querySelector('svg.zone')) root.innerHTML = '<svg class="zone" aria-hidden="true"></svg><div class="pcap"></div>';
+  if (!root.querySelector('svg.zone')) root.innerHTML = '<div class="who"></div><svg class="zone" aria-hidden="true"></svg><div class="pcap"></div>';
+  const S = STRINGS[f.lang];
+  // On its own the zone window still says who is batting, and the count.
+  const b = f.state.batter;
+  root.querySelector('.who')!.innerHTML = b
+    ? `<b>${esc(b.short)}</b><span>${esc(S.bats(b.side))}</span><span class="mono">${Math.min(3, f.state.balls)}-${Math.min(2, f.state.strikes)}</span>`
+    : '';
   const svg = root.querySelector<SVGSVGElement>('svg.zone')!;
   const r = svg.getBoundingClientRect();
-  const S = STRINGS[f.lang];
   svg.innerHTML = zoneSvg(f.state.atBat, {
     w: r.width, h: r.height, iso: f.look.style.renderer === 'iso', theme: f.look.style.theme,
     batter: f.state.batter ? { side: f.state.batter.side, label: S.bats(f.state.batter.side) } : undefined,

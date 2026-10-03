@@ -29,7 +29,12 @@ interface Drawn {
   g: SVGGElement;
   flip: SVGGElement;
   opacity: number;
+  /** A runner's name beside the piece (inside its group, so it moves and fades with it). */
+  label?: { g: SVGGElement; rect: SVGRectElement; text: SVGTextElement; name: string; w: number } | undefined;
 }
+
+/** Name labels need room: below this piece radius (px) or board height they are left out. */
+const LABEL_MIN_RADIUS = 7, LABEL_MIN_HEIGHT = 90, LABEL_FONT = 9;
 
 export interface Look { style: StyleManifest; background: Background; paints: Record<Side, Paint> }
 
@@ -358,6 +363,7 @@ export class FieldRenderer {
     g.style.opacity = String(d.opacity);
     if (d.g.parentNode) d.g.replaceWith(g); else this.gPieces.appendChild(g);
     d.g = g; d.flip = flip;
+    d.label = undefined; // rebuilt with the piece, at the new size and style
     this.paint(d, d.side);
     this.place(d);
   }
@@ -372,6 +378,47 @@ export class FieldRenderer {
     const [fx, fy] = spotFeet(d.spot);
     const [x, y] = toScreen(this.proj, fx, fy);
     d.g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    this.placeLabel(d, fx);
+  }
+
+  /**
+   * A runner's short name, above the piece (toward the open outfield). First and third sit near the
+   * board's edges, so their labels grow inward: right-aligned at first, left-aligned at third.
+   * Only runners: the batter has the label under the plate, the pitcher is in the capsules.
+   */
+  private placeLabel(d: Drawn, fx: number): void {
+    const name = d.piece.role === 'runner' ? d.piece.name : undefined;
+    if (!name || this.proj.r < LABEL_MIN_RADIUS || this.h < LABEL_MIN_HEIGHT) {
+      d.label?.g.remove();
+      d.label = undefined;
+      return;
+    }
+    if (!d.label || d.label.name !== name) {
+      d.label?.g.remove();
+      const c = this.colours();
+      const g = el('g', { class: 'runner-name' }, d.g);
+      const rect = el('rect', { rx: 3, fill: alpha(c.theme.panel, 0.85) }, g);
+      const text = el('text', { 'font-size': LABEL_FONT, fill: alpha(c.theme.text, 0.9) }, g);
+      text.textContent = name;
+      let w = name.length * LABEL_FONT * 0.6;
+      try { w = text.getBBox().width; } catch { /* not laid out: keep the estimate */ }
+      d.label = { g, rect, text, name, w };
+    }
+    const R = this.proj.r;
+    const top = this.iso ? R * 0.5 + R * this.look.style.piece.thickness : R;
+    const where = fx > 15 ? 'first' : fx < -15 ? 'third' : 'middle';
+    const tx = where === 'first' ? R + 2 : where === 'third' ? -(R + 2) : 0;
+    const ty = -(top + 4);
+    const anchor = where === 'first' ? 'end' : where === 'third' ? 'start' : 'middle';
+    const { rect, text, w } = d.label;
+    text.setAttribute('x', tx.toFixed(1));
+    text.setAttribute('y', ty.toFixed(1));
+    text.setAttribute('text-anchor', anchor);
+    const left = anchor === 'start' ? tx : anchor === 'end' ? tx - w : tx - w / 2;
+    rect.setAttribute('x', (left - 3).toFixed(1));
+    rect.setAttribute('y', (ty - LABEL_FONT + 1).toFixed(1));
+    rect.setAttribute('width', (w + 6).toFixed(1));
+    rect.setAttribute('height', String(LABEL_FONT + 3));
   }
 
   private setOpacity(d: Drawn, o: number): void {

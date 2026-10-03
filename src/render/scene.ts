@@ -11,6 +11,8 @@ export interface Piece {
   key: string;
   /** Player id. */
   id: number;
+  /** Short name, for the label beside a runner. */
+  name?: string;
   side: Side;
   role: 'batter' | 'runner' | 'pitcher';
   spot: Spot;
@@ -34,15 +36,15 @@ export function sceneOf(state: GameState, events: readonly GameEvent[] = []): Ma
   if (OVER.has(state.status)) return scene;
   const bat: Side = state.half === 'top' ? 'away' : 'home';
   for (const [b, p] of Object.entries(state.bases) as [Base, PlayerRef][]) {
-    scene.set(runnerKey(p.id), { key: runnerKey(p.id), id: p.id, side: bat, role: 'runner', spot: BASE_SPOT[b] });
+    scene.set(runnerKey(p.id), { key: runnerKey(p.id), id: p.id, name: p.short, side: bat, role: 'runner', spot: BASE_SPOT[b] });
   }
   const paDone = events.some((e) => e.type === 'plateAppearance');
   if (state.batter && !paDone && !scene.has(runnerKey(state.batter.id))) {
     const key = runnerKey(state.batter.id);
-    scene.set(key, { key, id: state.batter.id, side: bat, role: 'batter', spot: 0 });
+    scene.set(key, { key, id: state.batter.id, name: state.batter.short, side: bat, role: 'batter', spot: 0 });
   }
   if (state.pitcher) {
-    scene.set(PITCHER_KEY, { key: PITCHER_KEY, id: state.pitcher.id, side: bat === 'away' ? 'home' : 'away', role: 'pitcher', spot: 'mound' });
+    scene.set(PITCHER_KEY, { key: PITCHER_KEY, id: state.pitcher.id, name: state.pitcher.short, side: bat === 'away' ? 'home' : 'away', role: 'pitcher', spot: 'mound' });
   }
   return scene;
 }
@@ -111,7 +113,7 @@ export function planStep(prevScene: Scene, state: GameState, events: readonly Ga
   const b = state.batter;
   const thrown = events.some((e) => e.type === 'pitch' || e.type === 'automaticCall');
   if (b && thrown && !prev.has(runnerKey(b.id)) && paths.get(b.id)?.spots[0] !== undefined) {
-    const piece: Piece = { key: runnerKey(b.id), id: b.id, side: state.half === 'top' ? 'away' : 'home', role: 'batter', spot: 0 };
+    const piece: Piece = { key: runnerKey(b.id), id: b.id, name: b.short, side: state.half === 'top' ? 'away' : 'home', role: 'batter', spot: 0 };
     prev = new Map(prev).set(piece.key, piece);
     tracks.push({ kind: 'enter', key: piece.key, at: 0, dur: TIMING.fade, piece });
   }
