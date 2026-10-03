@@ -514,7 +514,7 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 
 - **版本**：0.1.0（`package.json`、`Cargo.toml`、`tauri.conf.json`）。
 - **Windows**：NSIS 安裝檔設成只裝給目前使用者（`installMode: currentUser`），不需要系統管理員權限；另有免安裝 zip（`Basesmall.exe`、授權、`docs/PORTABLE.txt` 當說明）。兩者都沒有程式碼簽章，README 與 zip 內的說明寫了「Windows 已保護您的電腦」怎麼過。都需要 WebView2。
-- **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性，未簽章、未在實機測試。
+- **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性，未在實機測試。macOS 版用 ad-hoc 簽章（`bundle.macOS.signingIdentity: "-"`）：Apple Silicon 上從網路下載、完全沒簽章的 App 會被說成「已損毀」而且沒有放行的按鈕；ad-hoc 簽章後仍未公證，使用者第一次要到「隱私權與安全性」按「強制打開」。第一次發版的 dmg 裡沒有 `_CodeSignature`，因此補上。
 - **自動建置**：`.github/workflows/ci.yml` 每次推送跑型別檢查與測試（Linux），並在乾淨的 Windows 機器上照 README 的指令建置。這就是「全新環境照 README 一個指令跑起來」的驗收。`.github/workflows/release.yml` 在推版本標籤時建置三個平台，結果放進一個**草稿**發布，維護者看過按「發布」才公開。
 - **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。它只在 `src-tauri/tauri.release.conf.json` 裡列為打包資源：放在主設定的話，Tauri 的 build script 在任何建置（包括 `tauri dev`）都要求檔案存在，乾淨的 clone 照 README 建置會直接失敗（CI 第一次跑就是這樣失敗的）。腳本先 `cargo fetch`，因為授權全文在下載下來的原始碼裡，全新的機器還沒有。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
 - **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。
