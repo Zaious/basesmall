@@ -1,5 +1,7 @@
-// The main window: choose a team, pick a game, follow it, change settings. The game view has four
-// size tiers (dot, bar, field, full); the window's size picks one. Field and full draw the board.
+// The main window: choose a team, follow it (or pick a game), change settings. The game view has
+// four size tiers (dot, bar, field, full); the window's size picks one. Field and full draw the
+// board. M5 adds the home card for the user's team, the scoreboard drawer, low-key mode, hotkeys,
+// the optional windows and catching up on a game joined late.
 // Runs in a plain browser too (without window controls), which is how the UI is checked headless.
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -8,39 +10,54 @@ import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 import { MlbLiveSource } from '../data/mlb/live-source.ts';
 import type { MlbFeed } from '../data/mlb/feed-types.ts';
 import { mapStatus } from '../data/mlb/codes.ts';
+import { cardOf, isLive, type GameCard, type MlbScheduleGame } from '../data/mlb/schedule.ts';
+import { ScheduleService, SCHEDULE_HYDRATE } from '../data/mlb/schedule-service.ts';
 import { MlbReplaySource } from '../data/replay/mlb-replay-source.ts';
 import type { PaceMode } from '../data/replay/pacing.ts';
 import { GameStore } from '../model/store.ts';
-import type { GameEvent, GameState, Side } from '../model/types.ts';
+import type { GameEvent, GameState } from '../model/types.ts';
 import { detectLang, eventLine, pitchLine, STRINGS, type Lang } from '../i18n/index.ts';
 import { piecePaints, teamPaint } from '../styles/team-colors.ts';
 import { findStyle, loadStyles, nextStyle } from '../styles/loader.ts';
 import type { StyleManifest } from '../styles/manifest.ts';
-import { fromLocalStorage, NOTIFY_KINDS, type PaceSetting, type Settings, type Size } from '../settings/schema.ts';
+import {
+  EXTRA_SOUNDS, fromLocalStorage, NOTIFY_KINDS, PANELS, type AfterOut, type PaceSetting, type PanelName, type Settings, type Size,
+} from '../settings/schema.ts';
 import { SettingsStore, type SettingsBackend } from '../settings/store.ts';
-import { Sounds } from '../audio/sounds.ts';
+import { Sounds, type SoundName } from '../audio/sounds.ts';
+import { soundsFor } from '../audio/cues.ts';
 import { Notifier } from '../notify/notifier.ts';
 import { diffSchedule, noticeFor, scheduleNotice, type GameSnap, type Notice } from '../notify/rules.ts';
+import { decide, seasonKey, type Decision } from '../follow/decide.ts';
+import { isBigMoment, mostTense, tension } from '../follow/tension.ts';
+import { Panels } from '../panels/manager.ts';
+import { packPlan, PANEL_SIZE } from '../panels/frame.ts';
 import { FieldRenderer } from '../render/field-svg.ts';
 import { AnimationQueue } from '../render/queue.ts';
 import { planStep, sceneOf, type Plan, type Scene } from '../render/scene.ts';
 import { nextTier, partsOf, tierOf, TIER_MIN_WIDTH, TIER_PRESET, type Tier, type TierParts } from '../render/tiers.ts';
 import { frameGaps } from '../render/tween.ts';
 import { zoneSvg } from '../render/zone.ts';
-import { barView, dot, dotView, esc, hudView, linescoreView, matchupView, pitchCaption } from './views.ts';
+import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption } from './views.ts';
+import { adoptView, homeView } from './home.ts';
+import { boardRows } from './scoreboard.ts';
 import teamTable from '../../styles/team-colors/mlb.json' with { type: 'json' };
 
 const inTauri = '__TAURI_INTERNALS__' in window;
 const win = inTauri ? getCurrentWindow() : null;
 const app = document.getElementById('app')!;
 const tabsEl = document.getElementById('tabs')!;
+const boardEl = document.getElementById('board')!;
 
 /** Launch overrides for checking the app (--tier, --style, --bg, ...). They are never saved. */
 const dev: { tier?: Tier; selfcheck?: boolean; speed?: number } = {};
-const TEAMS = Object.keys((teamTable as { teams: Record<string, unknown> }).teams).sort();
+const TEAM_TABLE = (teamTable as unknown as { teams: Record<string, { id: number }> }).teams;
+const TEAMS = Object.keys(TEAM_TABLE).sort();
+const teamId = (abbr: string) => TEAM_TABLE[abbr]?.id;
 
 // ---------- settings ----------
 
@@ -56,6 +73,8 @@ let settings = new SettingsStore(backend, fromLocalStorage(legacy));
 settings.persist = false;
 const cfg = () => settings.current;
 const fav = () => { const f = cfg().favorite; return f && f !== 'none' ? f : undefined; };
+/** The team the home card follows: the one adopted for the postseason, else the user's own. */
+const homeTeam = () => (cfg().follow.after === 'adopt' && cfg().follow.adopted) || fav();
 
 let lang: Lang = 'en';
 let S = STRINGS.en;
@@ -94,31 +113,42 @@ async function loadUserStyles(): Promise<void> {
 
 // ---------- window size per view ----------
 
-type View = 'chooser' | 'picker' | 'game' | 'settings';
+type View = 'chooser' | 'picker' | 'game' | 'settings' | 'home';
 const DEFAULT_SIZE: Record<View, Size> = {
-  chooser: { w: 480, h: 300 }, picker: { w: 480, h: 300 }, game: TIER_PRESET.field, settings: { w: 400, h: 460 },
+  chooser: { w: 480, h: 300 }, picker: { w: 480, h: 300 }, game: TIER_PRESET.field, settings: { w: 400, h: 460 }, home: { w: 480, h: 116 },
 };
+/** Low-key mode's strip: small, plain. */
+const LOW_KEY_SIZE: Size = { w: 150, h: 26 };
 /** Below this the lists cannot show a single row, so they never open smaller. */
 const LIST_MIN_HEIGHT = 200;
 /** Height of the strip above the game: tabs on the left (clock, replay), controls on the
  *  right on hover. Always there in the game view, so nothing ever covers the game. Saved sizes exclude it. */
 const TAB_H = 20;
+/** The scoreboard drawer under the window, when open. Saved sizes exclude it too. */
+const BOARD_H = 150;
 let view: View = 'picker';
 let programmaticResize = 0;
+
+const lowKeyOn = () => cfg().lowKey && view === 'game';
+const boardOpen = () => cfg().scoreboard && (view === 'game' || view === 'home') && !lowKeyOn();
+const sizeKey = (v: View) => (v === 'game' && cfg().lowKey ? 'size-lowkey' : `size-${v}`);
+/** Window height that is not the view's own: the tab strip and the scoreboard drawer. */
+const extraH = (v: View) => (v === 'game' ? TAB_H : 0) + (cfg().scoreboard && (v === 'game' || v === 'home') && !(v === 'game' && cfg().lowKey) ? BOARD_H : 0);
 
 const savedSize = (key: string, fallback: Size): Size => cfg().sizes[key] ?? fallback;
 const saveSize = (key: string, s: Size) => settings.update((d) => { d.sizes[key] = s; });
 
 async function fitWindow(v: View): Promise<void> {
   view = v;
+  document.body.classList.toggle('has-board', boardOpen());
   if (!win) return;
-  let size = savedSize(`size-${v}`, DEFAULT_SIZE[v]);
-  if (v === 'game' && dev.tier) size = TIER_PRESET[dev.tier];
-  if (v !== 'game') size = { w: Math.max(size.w, 320), h: Math.max(size.h, LIST_MIN_HEIGHT) };
+  let size = savedSize(sizeKey(v), v === 'game' && cfg().lowKey ? LOW_KEY_SIZE : DEFAULT_SIZE[v]);
+  if (v === 'game' && dev.tier && !cfg().lowKey) size = TIER_PRESET[dev.tier];
+  if (v !== 'game' && v !== 'home') size = { w: Math.max(size.w, 320), h: Math.max(size.h, LIST_MIN_HEIGHT) };
   programmaticResize = Date.now();
-  await win.setSize(new LogicalSize(size.w, size.h + (v === 'game' ? TAB_H : 0)));
+  await win.setSize(new LogicalSize(size.w, size.h + extraH(v)));
   // The window starts hidden so it never flashes at the wrong size.
-  await win.show();
+  if (!hiddenByKey) await win.show();
 }
 
 if (win) {
@@ -128,10 +158,10 @@ if (win) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
       const size = (await win.innerSize()).toLogical(await win.scaleFactor());
-      const h = Math.round(size.height - (view === 'game' ? TAB_H : 0)), w = Math.round(size.width);
-      saveSize(`size-${view}`, { w, h });
+      const h = Math.round(size.height - extraH(view)), w = Math.round(size.width);
+      saveSize(sizeKey(view), { w, h });
       // Each tier remembers its own size, for the size button.
-      if (view === 'game') saveSize(`size-tier-${tierOf(h)}`, { w, h });
+      if (view === 'game' && !cfg().lowKey) saveSize(`size-tier-${tierOf(h)}`, { w, h });
     }, 400);
   });
 }
@@ -145,7 +175,7 @@ async function cycleTier(): Promise<void> {
   // A saved size from the edge of a tier could fall into the neighbouring one; keep the tier asked for.
   const h = tierOf(size.h) === next ? size.h : TIER_PRESET[next].h;
   programmaticResize = Date.now();
-  await win.setSize(new LogicalSize(w, h + TAB_H));
+  await win.setSize(new LogicalSize(w, h + extraH('game')));
   saveSize('size-game', { w, h });
 }
 
@@ -163,13 +193,21 @@ async function fetchJson(path: string): Promise<unknown> {
   }
 }
 
+/** MLB's schedule day is the US Eastern date. */
+const easternToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+
 const live = new MlbLiveSource(fetchJson);
 const replay = new MlbReplaySource(async (pk) => (await fetchJson(`/api/v1.1/game/${pk}/feed/live`)) as MlbFeed);
 const store = new GameStore();
+const schedule = new ScheduleService(fetchJson, easternToday);
+/** Every game card seen (schedule, team windows, the game list), for series and situations by game. */
+const cardsByPk = new Map<number, GameCard>();
+const remember = (cards: readonly GameCard[]) => { for (const c of cards) cardsByPk.set(c.gamePk, c); };
 document.addEventListener('visibilitychange', () => live.setBackground(document.hidden));
 const setTitle = (t: string) => { document.title = t; void win?.setTitle(t); };
 const sounds = new Sounds();
 const notifier = inTauri ? new Notifier() : null;
+const panels = inTauri ? new Panels((name) => savedSize(`size-panel-${name}`, PANEL_SIZE[name])) : null;
 
 // ---------- team chooser ----------
 
@@ -196,24 +234,13 @@ function renderChooser(): void {
 
 // ---------- picker ----------
 
-interface ScheduleGame {
-  gamePk: number;
-  gameDate: string;
-  officialDate: string;
-  status: { abstractGameState?: string; codedGameState?: string; detailedState?: string };
-  teams: Record<Side, { team: { abbreviation?: string; name: string }; score?: number }>;
-  linescore?: { currentInning?: number; isTopInning?: boolean };
-}
-
-/** MLB's schedule day is the US Eastern date. */
-const easternToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 const shiftDate = (d: string, days: number) => {
   const t = new Date(`${d}T12:00:00Z`);
   t.setUTCDate(t.getUTCDate() + days);
   return t.toISOString().slice(0, 10);
 };
 const shortDate = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
-const schedulePath = (date: string) => `/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore,team`;
+const schedulePath = (date: string) => `/api/v1/schedule?sportId=1&date=${date}&hydrate=${SCHEDULE_HYDRATE}`;
 
 type Tab = 'live' | 'later' | 'final';
 let pickerDate = easternToday();
@@ -222,7 +249,7 @@ let pickerTimer: ReturnType<typeof setTimeout> | null = null;
 let pickerFitted = false;
 const dates = new Map<number, string>(); // gamePk -> officialDate, for the replay tab
 
-function tabOf(g: ScheduleGame): Tab {
+function tabOf(g: MlbScheduleGame): Tab {
   const s = mapStatus(g.status);
   if (s === 'live' || s === 'delayed' || s === 'review' || s === 'suspended') return 'live';
   if (s === 'scheduled' || s === 'pregame') return 'later';
@@ -231,6 +258,7 @@ function tabOf(g: ScheduleGame): Tab {
 
 function pickerHeader(): string {
   return `<header><b>${esc(S.ui.pickGame)}</b>
+      ${homeTeam() ? `<button class="fav" data-action="home" title="${esc(S.follow.home)}">⌂ ${esc(homeTeam()!)}</button>` : ''}
       <button class="fav" data-action="choose" title="${esc(S.ui.favorite)}">★ ${esc(fav() ?? S.ui.noFavorite)}</button>
       <span class="grow"></span>
       <button data-day="-1" title="${esc(S.ui.prevDay)}">‹</button><span class="date">${pickerDate}</span>
@@ -246,9 +274,9 @@ async function showPicker(): Promise<void> {
   if (pickerTimer) clearTimeout(pickerTimer);
   if (from !== 'picker' || !pickerFitted) { pickerFitted = true; void fitWindow('picker'); }
   app.innerHTML = `<section class="picker">${pickerHeader()}<div class="empty">${esc(S.ui.loading)}</div></section>`;
-  let games: ScheduleGame[];
+  let games: MlbScheduleGame[];
   try {
-    const sched = (await fetchJson(schedulePath(pickerDate))) as { dates?: { games: ScheduleGame[] }[] };
+    const sched = (await fetchJson(schedulePath(pickerDate))) as { dates?: { games: MlbScheduleGame[] }[] };
     games = (sched.dates ?? []).flatMap((d) => d.games);
   } catch {
     if (view === 'picker') app.querySelector('.empty')!.textContent = S.ui.loadFailed;
@@ -256,9 +284,10 @@ async function showPicker(): Promise<void> {
     return;
   }
   if (view !== 'picker') return; // the user moved on while we were loading
+  remember(games.map(cardOf));
   setTitle(`Basesmall · picker · ${pickerDate} · ${games.length} games`);
-  const mine = (g: ScheduleGame) => [g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].includes(fav());
-  const byTab: Record<Tab, ScheduleGame[]> = { live: [], later: [], final: [] };
+  const mine = (g: MlbScheduleGame) => [g.teams.away.team.abbreviation, g.teams.home.team.abbreviation].includes(fav());
+  const byTab: Record<Tab, MlbScheduleGame[]> = { live: [], later: [], final: [] };
   for (const g of [...games].sort((a, b) => Number(mine(b)) - Number(mine(a)))) {
     byTab[tabOf(g)].push(g);
     dates.set(g.gamePk, g.officialDate);
@@ -271,6 +300,7 @@ async function showPicker(): Promise<void> {
     const away = g.teams.away.team.abbreviation ?? '?', home = g.teams.home.team.abbreviation ?? '?';
     const c = piecePaints(away, home, fav());
     const status = mapStatus(g.status);
+    const card = cardsByPk.get(g.gamePk);
     const when = pickerTab === 'later'
       ? new Date(g.gameDate).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
       : pickerTab === 'live' && g.linescore?.currentInning
@@ -279,9 +309,11 @@ async function showPicker(): Promise<void> {
     // Scores stay hidden unless the user asked for them: picking a finished game must not spoil it.
     const score = showScores && pickerTab !== 'later' && g.teams.away.score !== undefined
       ? `<span class="score">${g.teams.away.score}:${g.teams.home.score ?? 0}</span>` : '';
+    // Postseason games say which series and game; once final, the series standing would spoil, so only the game.
+    const series = card?.series ? `<span class="ser">${esc(S.series(card.series, card.gameType, { away, home }).split(' · ')[0]!)}</span>` : '';
     return `<button class="row${mine(g) ? ' mine' : ''}" data-pk="${g.gamePk}" data-mode="${pickerTab === 'final' ? 'replay' : 'live'}" ${pickerTab === 'final' && status !== 'final' ? 'disabled' : ''}>
       <span class="teams">${mine(g) ? '<span class="star">★</span>' : ''}${dot(c.away)}${esc(away)} @ ${esc(home)}${dot(c.home)}</span>
-      ${score}<span class="when">${esc(when)}</span></button>`;
+      ${series}${score}<span class="when">${esc(when)}</span></button>`;
   }).join('');
   app.querySelector('.picker')!.innerHTML = `${pickerHeader()}
     <div class="tabs">${tabs}</div>
@@ -290,16 +322,154 @@ async function showPicker(): Promise<void> {
   pickerTimer = setTimeout(() => void showPicker(), 60_000);
 }
 
+// ---------- home: the user's team ----------
+
+type FollowMode = 'manual' | 'team' | 'tension';
+let homeDecision: Decision | null = null;
+let homeTimer: ReturnType<typeof setInterval> | null = null;
+let homeIdle = false;
+let openingIn: number | undefined;
+
+function stopHome(): void {
+  if (homeTimer) clearInterval(homeTimer);
+  homeTimer = null;
+  schedule.want('home', false);
+}
+
+/**
+ * What the user's team is up to: follow it if it is playing, else the home card (countdown, next
+ * game, or the season-over choices). Only called when nothing is being followed, or when the game on
+ * screen has ended: it never switches games mid-game (ARCHITECTURE 4.2.1).
+ */
+async function goHome(): Promise<void> {
+  const team = homeTeam();
+  if (!team) { await tensionHome(); return; }
+  if (view !== 'home') {
+    leaveGame();
+    view = 'home';
+    renderTabs(undefined);
+    void fitWindow('home');
+    app.innerHTML = `<section class="home"><div class="hrow muted">${esc(S.ui.loading)}</div></section>`;
+  }
+  homeIdle = false;
+  let d: Decision;
+  try {
+    const id = teamId(team);
+    if (id === undefined) { void showPicker(); return; }
+    const cards = await schedule.team(id);
+    remember(cards);
+    d = decide(id, cards, easternToday());
+  } catch {
+    app.innerHTML = `<section class="home"><div class="hrow muted">${esc(S.ui.loadFailed)}</div></section>`;
+    armHome(30_000);
+    return;
+  }
+  if (view !== 'home') return;
+  homeDecision = d;
+  if (d.kind === 'live') { follow(d.game.gamePk, 'live', 'team'); return; }
+  if (d.kind === 'over' && d.how !== 'advanced') {
+    // The adopted team is out: let go of it and look again from the user's own team.
+    if (team === cfg().follow.adopted) { settings.update((s) => { s.follow.adopted = null; }); await goHome(); return; }
+    const key = seasonKey(team, d.last);
+    if (cfg().follow.seen !== key) { renderHome(true); return; }
+    await applyAfter(cfg().follow.after);
+    return;
+  }
+  if (d.kind === 'none') openingIn = await daysToOpening();
+  renderHome(false);
+  // Count down every minute; ask again every five (and every minute once the start time is near).
+  armHome(60_000);
+}
+
+function armHome(ms: number): void {
+  if (homeTimer) clearInterval(homeTimer);
+  let ticks = 0;
+  homeTimer = setInterval(() => {
+    if (view !== 'home') { stopHome(); return; }
+    ticks++;
+    const d = homeDecision;
+    const near = d && (d.kind === 'today') && d.game.start - Date.now() < 10 * 60_000;
+    if (homeIdle) return; // the schedule subscription handles the idle (most tense) case
+    if (near || ticks % 5 === 0) void goHome(); else renderHome(false);
+  }, ms);
+}
+
+async function daysToOpening(): Promise<number | undefined> {
+  const year = Number(easternToday().slice(0, 4));
+  // This year's opening day, unless it has passed: then next year's.
+  for (const y of [year, year + 1]) {
+    try {
+      const start = await schedule.seasonStart(y);
+      if (!start) continue;
+      const days = Math.ceil((Date.parse(`${start}T12:00:00Z`) - Date.now()) / 86_400_000);
+      if (days > 0) return days;
+    } catch { /* offline: no countdown */ }
+  }
+  return undefined;
+}
+
+function renderHome(askAfter: boolean): void {
+  if (view !== 'home' || !homeDecision) return;
+  const team = homeTeam() ?? '';
+  app.innerHTML = homeView(homeDecision, { lang, team, now: Date.now(), askAfter, idle: homeIdle, ...(openingIn !== undefined ? { openingIn } : {}) });
+  setTitle(`Basesmall · home · ${team} · ${homeIdle ? 'idle' : homeDecision.kind}${homeDecision.kind === 'over' ? ` ${homeDecision.how}` : ''}${askAfter ? ' · ask' : ''}`);
+}
+
+/** The user chose (or had chosen) what to do now that the team is out. */
+async function applyAfter(k: AfterOut): Promise<void> {
+  switch (k) {
+    case 'tension': await tensionHome(); return;
+    case 'adopt': {
+      // Later rounds are on the schedule with placeholder sides ("AL High"): only real clubs count.
+      const teams = (await schedule.postseasonTeams().catch(() => [] as string[])).filter((t) => TEAM_TABLE[t]);
+      if (view !== 'home') return;
+      if (teams.length) { app.innerHTML = adoptView(teams, lang); setTitle(`Basesmall · home · adopt · ${teams.length} teams`); return; }
+      renderHome(false); // the postseason is over: nobody left to adopt
+      return;
+    }
+    case 'manual':
+      settings.update((d) => { d.scoreboard = true; });
+      renderHome(false);
+      return;
+    case 'rest':
+      openingIn = await daysToOpening();
+      homeDecision = { kind: 'none' };
+      renderHome(false);
+      return;
+  }
+}
+
+/** League mode, or "follow the most tense game": take the tensest live game, or wait for one. */
+async function tensionHome(): Promise<void> {
+  await schedule.refresh();
+  remember(schedule.cards);
+  const best = mostTense(schedule.cards);
+  if (best) { follow(best.gamePk, 'live', 'tension'); return; }
+  if (view !== 'home') {
+    leaveGame();
+    view = 'home';
+    renderTabs(undefined);
+    void fitWindow('home');
+  }
+  homeIdle = true;
+  homeDecision = { kind: 'none' };
+  renderHome(false);
+  // When a game goes live, the schedule subscription follows it.
+  schedule.want('home', true);
+}
+
 // ---------- settings screen ----------
 
 /** Where "Done" goes back to. */
 let settingsReturn: View = 'picker';
 let appVersion = '';
+let hotkeyError = false;
 
 function showSettings(): void {
   if (view === 'settings') return;
   settingsReturn = view;
   if (pickerTimer) clearTimeout(pickerTimer);
+  stopHome();
   view = 'settings';
   renderTabs(undefined);
   void fitWindow('settings');
@@ -315,6 +485,7 @@ function closeSettings(): void {
     shown = store.current;
     buildGame();
   } else if (settingsReturn === 'chooser') showChooser();
+  else if (settingsReturn === 'home') { view = 'picker'; void goHome(); }
   else void showPicker();
 }
 
@@ -325,6 +496,7 @@ function renderSettings(): void {
     `<div class="seg">${options.map(([v, label]) => `<button data-pick="${path}" data-value="${esc(v)}" aria-pressed="${v === current}">${esc(label)}</button>`).join('')}</div>`;
   const check = (path: string, on: boolean, label: string) =>
     `<label class="check"><input type="checkbox" data-set="${path}"${on ? ' checked' : ''}><span>${esc(label)}</span></label>`;
+  const preview = (name: SoundName) => `<button class="link" data-preview="${name}">▶</button>`;
   const marquee = c.notify.mode === 'marquee' || c.notify.mode === 'both';
   const soundNote = !c.sound.muted && sounds.state === 'suspended' ? `<p class="note">${esc(T.soundBlocked)}</p>` : '';
   const scrollTop = app.querySelector('.settings .body')?.scrollTop ?? 0;
@@ -332,14 +504,20 @@ function renderSettings(): void {
       <header><b>${esc(T.title)}</b><span class="grow"></span><button class="done" data-action="settings-done">${esc(T.done)}</button></header>
       <div class="body">
         <div class="srow"><span class="k">${esc(T.team)}</span><span class="v mono">★ ${esc(fav() ?? S.ui.noFavorite)}</span><button class="link" data-action="choose">${esc(T.change)}</button></div>
+        <div class="srow"><span class="k">${esc(T.after)}</span>${seg('follow.after', c.follow.after, (['manual', 'tension', 'adopt', 'rest'] as const).map((k) => [k, S.follow.after[k]]))}</div>
         <div class="srow"><span class="k">${esc(S.ui.style)}</span>${seg('style', style.id, styles.map((s) => [s.id, s.name[lang]]))}</div>
         <div class="srow"><span class="k">${esc(T.background)}</span>${seg('background', c.background, (['solid', 'semi', 'clear'] as const).map((b) => [b, T.bg[b]]))}</div>
         <div class="srow"><span class="k">${esc(T.language)}</span>${seg('language', c.language, [['auto', T.auto], ['zh-Hant', '繁體中文'], ['en', 'English']])}</div>
-        <div class="srow"><span class="k">${esc(T.tabs)}</span>${check('tabs.clock', c.tabs.clock, S.ui.clock)}${check('tabs.replay', c.tabs.replay, S.ui.replay)}</div>
+        <div class="srow"><span class="k">${esc(T.tabs)}</span>${check('tabs.clock', c.tabs.clock, S.ui.clock)}${check('tabs.replay', c.tabs.replay, S.ui.replay)}${check('tabs.series', c.tabs.series, T.seriesTab)}</div>
+        <div class="srow">${check('lowKey', c.lowKey, S.follow.lowKey)}${check('scoreboard', c.scoreboard, S.follow.scoreboard)}</div>
+
+        <h3>${esc(T.panels)}</h3>
+        <div class="srow">${PANELS.map((p) => check(`panels.${p}`, c.panels[p], T.panel[p])).join('')}</div>
 
         <h3>${esc(T.sound)}</h3>
         <div class="srow">${check('sound.on', !c.sound.muted, T.soundOn)}<input type="range" min="0" max="100" step="5" data-set="sound.volume" value="${Math.round(c.sound.volume * 100)}" aria-label="${esc(T.volume)}"${c.sound.muted ? ' disabled' : ''}></div>
-        <div class="srow">${check('sound.hit', c.sound.hit, T.hit)}<button class="link" data-preview="hit">▶ ${esc(T.preview)}</button>${check('sound.homeRun', c.sound.homeRun, T.homeRun)}<button class="link" data-preview="homeRun">▶ ${esc(T.preview)}</button></div>
+        <div class="srow">${check('sound.hit', c.sound.hit, T.hit)}${preview('hit')}${check('sound.homeRun', c.sound.homeRun, T.homeRun)}${preview('homeRun')}</div>
+        <div class="block"><span class="k">${esc(T.more)}</span><div class="chips">${EXTRA_SOUNDS.map((k) => `<span class="chip">${check(`sound.${k}`, c.sound[k], T[k])}${preview(k)}</span>`).join('')}</div></div>
         ${soundNote}
 
         <h3>${esc(T.notify)}</h3>
@@ -347,6 +525,12 @@ function renderSettings(): void {
         <div class="srow${marquee ? '' : ' off'}"><span class="k">${esc(T.spot)}</span>${seg('notify.marquee', c.notify.marquee, (['top', 'bottom', 'bar'] as const).map((m) => [m, T.spots[m]]))}</div>
         <div class="block${c.notify.mode === 'off' ? ' off' : ''}"><span class="k">${esc(T.events)}</span><div class="chips">${NOTIFY_KINDS.map((k) => check(`notify.events.${k}`, c.notify.events[k], S.notify.kinds[k])).join('')}</div></div>
         <div class="srow${c.notify.mode === 'off' ? ' off' : ''}">${check('notify.onlyMine', c.notify.onlyMine, T.onlyMine)}</div>
+
+        <h3>${esc(T.hotkeys)}</h3>
+        <div class="srow">${check('hotkeys.on', c.hotkeys.on, T.hotkeysOn)}</div>
+        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(T.hide)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.hide" value="${esc(c.hotkeys.hide)}"></div>
+        <div class="srow${c.hotkeys.on ? '' : ' off'}"><span class="k">${esc(S.follow.lowKey)}</span><input class="key" type="text" spellcheck="false" data-set="hotkeys.lowKey" value="${esc(c.hotkeys.lowKey)}"></div>
+        ${hotkeyError ? `<p class="note">${esc(T.hotkeyBad)}</p>` : ''}
 
         <h3>${esc(T.replay)}</h3>
         <div class="srow"><span class="k">${esc(T.pace)}</span>${seg('replay.pace', c.replay.pace, (['compact', 'real', 'fixed', 'results'] as const).map((p) => [p, T.paces[p]]))}</div>
@@ -360,7 +544,7 @@ function renderSettings(): void {
     </section>`;
   const body = app.querySelector('.settings .body');
   if (body) body.scrollTop = scrollTop;
-  setTitle(`Basesmall · settings · ${lang} · ${style.id} · ${c.background} · sound ${c.sound.muted ? 'off' : 'on'} · notify ${c.notify.mode}`);
+  setTitle(`Basesmall · settings · ${lang} · ${style.id} · ${c.background} · sound ${c.sound.muted ? 'off' : 'on'} · notify ${c.notify.mode} · after ${c.follow.after} · hotkeys ${c.hotkeys.on ? (hotkeyError ? 'error' : 'on') : 'off'}`);
 }
 
 /** Set a dotted path like "notify.events.hr" on a settings draft. */
@@ -383,6 +567,7 @@ app.addEventListener('change', (e) => {
     if (path === 'sound.on' && t.checked) sounds.prime();
     setPath(path, t.checked);
   } else if (t.type === 'range') setPath(path, Number(t.value) / 100);
+  else if (t.type === 'text') setPath(path, t.value.trim());
 });
 
 // ---------- reacting to settings ----------
@@ -394,17 +579,23 @@ function onSettings(now: Settings, before: Settings): void {
   if (now.background !== before.background) applyBackground();
   configureNotices();
   if (now.replay.pace !== before.replay.pace) applyPace();
+  if (JSON.stringify(now.hotkeys) !== JSON.stringify(before.hotkeys)) void applyHotkeys();
+  if (JSON.stringify(now.panels) !== JSON.stringify(before.panels)) void panels?.sync(now.panels);
+  const layout = now.lowKey !== before.lowKey || now.scoreboard !== before.scoreboard;
+  if (layout && (view === 'game' || view === 'home')) void fitWindow(view);
   // Redraw what is on screen.
   if (view === 'settings') renderSettings();
   else if (view === 'picker' && (now.language !== before.language || now.replay.showScores !== before.replay.showScores)) void showPicker();
   else if (view === 'chooser') renderChooser();
-  else if (view === 'game' && (now.language !== before.language || now.style !== before.style || now.background !== before.background)) buildGame();
+  else if (view === 'home') renderHome(false);
+  else if (view === 'game' && (layout || now.language !== before.language || now.style !== before.style || now.background !== before.background)) buildGame();
   else if (view === 'game') renderTabs(store.current);
+  updateWants();
 }
 
 function applyBackground(): void {
   const m = cfg().background;
-  for (const el of [app, tabsEl]) {
+  for (const el of [app, tabsEl, boardEl]) {
     el.classList.remove('bg-solid', 'bg-semi', 'bg-clear');
     el.classList.add(`bg-${m}`);
   }
@@ -414,11 +605,18 @@ function applyBackground(): void {
 // ---------- game: state ----------
 
 let mode: 'live' | 'replay' = 'live';
+let followMode: FollowMode = 'manual';
 let following = 0;
 let speed = 1;
 const SPEEDS = [1, 2, 4, 8];
 /** Dev aid (--seek=<entry> [--paused]): jump a replay to an entry once it has loaded. */
 let pendingSeek: { index: number; pause: boolean } | null = null;
+/** Catching up on a game joined late: its plate appearances from the first inning, then live. */
+let catchUp: { pk: number; then: FollowMode } | null = null;
+/** Another game's big moment, offered as a tab while watching this one. */
+let elsewhere: { key: string; card: GameCard } | null = null;
+const dismissedElsewhere = new Set<string>();
+let endTimer: ReturnType<typeof setTimeout> | null = null;
 
 let tier: Tier = 'field';
 let parts: TierParts = partsOf('field', 480);
@@ -434,7 +632,8 @@ let pitchText = '';
 let showPitch = false;
 let bubble: { html: string; hr: boolean; seq: number } | null = null;
 let bubbleSeq = 0;
-const check = { steps: 0, bad: 0, notices: 0, sounds: 0 };
+let hiddenByKey = false;
+const check = { steps: 0, bad: 0, notices: 0, sounds: 0, frames: 0 };
 
 interface Step { state: GameState; events: readonly GameEvent[]; text: readonly GameEvent[] }
 const queue = new AnimationQueue<Step>(runStep, {
@@ -444,6 +643,12 @@ const queue = new AnimationQueue<Step>(runStep, {
 
 const paintsOf = (s: GameState) => piecePaints(s.teams.away.abbr, s.teams.home.abbr, fav());
 const look = (s: GameState) => ({ style, background: cfg().background, paints: paintsOf(s) });
+/** "代看": a team of the user's is set, and neither side on screen is it. */
+const proxyTag = (s: GameState) => {
+  const mine = [fav(), cfg().follow.adopted].filter(Boolean);
+  return mine.length && !mine.some((t) => t === s.teams.away.abbr || t === s.teams.home.abbr)
+    ? { text: S.follow.proxy, title: S.follow.proxyTitle } : undefined;
+};
 
 const PACES: Record<PaceSetting, PaceMode> = {
   compact: { kind: 'compact' }, real: { kind: 'real' }, fixed: { kind: 'fixed', seconds: 5 }, results: { kind: 'results' },
@@ -459,7 +664,7 @@ function withPlayer(pk: number, fn: (p: NonNullable<ReturnType<typeof replay.pla
 }
 
 function applyPace(): void {
-  if (mode === 'replay') replay.player(following)?.setPace(PACES[cfg().replay.pace]);
+  if (mode === 'replay' && !catchUp) replay.player(following)?.setPace(PACES[cfg().replay.pace]);
 }
 
 // ---------- game: the clock tab ----------
@@ -494,7 +699,7 @@ function elapsed(s: GameState): string {
 // Tick once a second, touching only the clock's digits, and only when they change (a paused
 // replay's clock stands still, and an unchanged write still costs a layout).
 setInterval(() => {
-  if (view !== 'game' || !cfg().tabs.clock || !store.current) return;
+  if (view !== 'game' || !cfg().tabs.clock || !store.current || cfg().lowKey) return;
   const el = tabsEl.querySelector('.clock-value');
   const text = elapsed(store.current);
   if (el && el.textContent !== text) el.textContent = text;
@@ -508,24 +713,38 @@ function renderTabs(s: GameState | undefined): void {
   const game = view === 'game';
   const narrow = isNarrow();
   const tabs = cfg().tabs;
-  if (game && s) {
+  if (game && s && !cfg().lowKey) {
     const time = elapsed(s);
     // Narrow: the clock alone, without its close button.
     if (tabs.clock && time) items.push(`<span class="tab" title="${esc(S.ui.clock)}">⏱ <span class="mono clock-value">${time}</span>${narrow ? '' : '<button data-close="clock" aria-label="×">×</button>'}</span>`);
-    if (tabs.replay && mode === 'replay' && !narrow) {
+    if (catchUp) items.push(`<span class="tab accent">⏩ ${esc(S.follow.catchingUp)}</span>`);
+    else if (tabs.replay && mode === 'replay' && !narrow) {
       const date = dates.get(s.gamePk);
       items.push(`<span class="tab accent">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}<button data-close="replay" aria-label="×">×</button></span>`);
+    }
+    const card = cardsByPk.get(s.gamePk);
+    // The series standing in a replay would spoil the game's result: live only.
+    if (tabs.series && card?.series && mode === 'live' && !narrow) {
+      items.push(`<span class="tab">${esc(S.series(card.series, card.gameType, { away: card.away.abbr, home: card.home.abbr }))}<button data-close="series" aria-label="×">×</button></span>`);
+    }
+    if (elsewhere && !narrow) {
+      const c = elsewhere.card;
+      const text = S.follow.elsewhere(S.inning(c.inning ?? 1, c.half ?? 'top'), `${c.away.abbr} ${c.away.runs ?? 0}:${c.home.runs ?? 0} ${c.home.abbr}`);
+      items.push(`<span class="tab elsewhere"><button class="go" data-pk="${c.gamePk}" data-mode="live">${esc(text)} ▶</button><button data-close="elsewhere" aria-label="×">×</button></span>`);
     }
   }
   tabsEl.innerHTML = game ? `${items.join('')}<span class="grow"></span>${controls()}` : '';
   document.body.classList.toggle('has-tabs', game);
+  document.body.classList.toggle('has-board', boardOpen());
+  void panels?.setHidden(view !== 'game' || cfg().lowKey || hiddenByKey);
 }
 
-function setTab(k: 'clock' | 'replay', on: boolean): void {
+function setTab(k: 'clock' | 'replay' | 'series', on: boolean): void {
   settings.update((d) => { d.tabs[k] = on; });
 }
 
 function controls(): string {
+  if (cfg().lowKey) return `<span class="controls"><button data-action="lowkey" title="${esc(S.follow.lowKey)}">◱</button></span>`;
   // A dot-sized window keeps only what it needs to get around.
   const narrow = isNarrow();
   const tabs = cfg().tabs;
@@ -536,13 +755,18 @@ function controls(): string {
   const replayMore = mode === 'replay' && !narrow
     ? `<button data-action="speed" title="${esc(S.ui.speed)}">${speed}×</button><button data-action="next" title="${esc(S.ui.nextResult)}">⏭</button>`
     : '';
+  // Joined a game already under way: offer to catch up from the first inning.
+  const inProgress = mode === 'live' && shown?.status === 'live' && (shown.inning > 1 || shown.half === 'bottom');
+  const catchButton = inProgress && !narrow ? `<button data-action="catchup" title="${esc(S.follow.catchUp)}">⏩</button>` : '';
   const tabButtons = narrow ? '' : `<button data-action="clock" aria-pressed="${tabs.clock}" title="${esc(S.ui.clock)}">⏱</button>`
     + (mode === 'replay' ? `<button data-action="replay-tab" aria-pressed="${tabs.replay}">${esc(S.ui.replay)}</button>` : '');
   const sizeButton = `<button data-action="size" title="${esc(S.ui.size)}">⤢ ${esc(S.tier[tier])}</button>`;
   const styleTip = [S.ui.style, ...styleProblems].join('\n');
-  const styleButton = narrow ? '' : `<button data-action="style" title="${esc(styleTip)}">◇ ${esc(style.name[lang])}</button>`;
+  const styleButton = narrow ? '' : `<button data-action="style" title="${esc(`${style.name[lang]}\n${styleTip}`)}">◇</button>`;
+  const boardButton = narrow ? '' : `<button data-action="scoreboard" aria-pressed="${cfg().scoreboard}" title="${esc(S.follow.scoreboard)}">▤</button>`;
+  const lowKeyButton = narrow ? '' : `<button data-action="lowkey" title="${esc(S.follow.lowKey)}">◱</button>`;
   const settingsButton = `<button data-action="settings" title="${esc(S.set.title)}">⚙</button>`;
-  return `<span class="controls">${toggle}${replayMore}${tabButtons}${sizeButton}${styleButton}${settingsButton}<button data-action="back">‹${narrow ? '' : ` ${esc(S.ui.back)}`}</button></span>`;
+  return `<span class="controls">${toggle}${replayMore}${catchButton}${tabButtons}${sizeButton}${styleButton}${boardButton}${lowKeyButton}${settingsButton}<button data-action="back">‹${narrow ? '' : ` ${esc(S.ui.back)}`}</button></span>`;
 }
 
 // ---------- game: following ----------
@@ -556,15 +780,22 @@ function leaveGame(): void {
   queue.clear();
   field?.dispose();
   field = null;
+  stopHome();
+  if (endTimer) clearTimeout(endTimer);
+  endTimer = null;
+  elsewhere = null;
   void notifier?.clearAll();
-  updateWatcher();
+  updateWants();
 }
 
-function follow(pk: number, how: 'live' | 'replay'): void {
+function follow(pk: number, how: 'live' | 'replay', why: FollowMode = 'manual', opts: { catchUp?: boolean } = {}): void {
   if (pickerTimer) clearTimeout(pickerTimer);
+  const then = followMode;
   leaveGame();
   following = pk;
   mode = how;
+  followMode = why;
+  catchUp = opts.catchUp ? { pk, then } : null;
   barLine = pitchText = '';
   showPitch = false;
   bubble = null;
@@ -580,17 +811,20 @@ function follow(pk: number, how: 'live' | 'replay'): void {
   store.follow(how === 'live' ? live : replay, pk);
   if (how === 'replay') {
     withPlayer(pk, (p) => {
-      p.setPace(PACES[cfg().replay.pace]);
+      if (catchUp?.pk === pk) {
+        // Catch-up: plate-appearance results only, then the live game from where it is now.
+        p.setPace(PACES.results);
+        p.onEnd(() => { if (catchUp?.pk === pk && following === pk && view === 'game') { const back = catchUp.then; catchUp = null; follow(pk, 'live', back); } });
+      } else p.setPace(PACES[cfg().replay.pace]);
       if (speed !== 1) p.setSpeed(speed);
     });
   }
-  updateWatcher();
+  updateWants();
 }
 
 const formatLine = (l: { who?: string; text: string }) => `${l.who ? `<b>${esc(l.who)}</b> ` : ''}${esc(l.text)}`;
 /** Plays where the carry is worth a number in the bubble. */
 const FAR = new Set(['single', 'double', 'triple', 'home_run', 'field_out', 'sac_fly']);
-const HITS = new Set(['single', 'double', 'triple']);
 
 /** Update the text lines from what just happened. */
 function applyLines(events: readonly GameEvent[]): void {
@@ -637,7 +871,7 @@ store.subscribe({
   onError: () => { if (shown) renderText(); },
 });
 
-async function runStep(step: Step, animate: boolean, catchUp: number): Promise<void> {
+async function runStep(step: Step, animate: boolean, catchUpRate: number): Promise<void> {
   if (view !== 'game') return;
   const gen = gameGen;
   const before = shown;
@@ -647,18 +881,22 @@ async function runStep(step: Step, animate: boolean, catchUp: number): Promise<v
   if (!shown) {
     shown = step.state;
     buildGame();
-    updateWatcher(); // now it is known whose game is on screen
+    updateWants(); // now it is known whose game is on screen
+    sendPanels(step, plan, false, 1);
     return;
   }
-  // Sound at contact; not while the queue is catching up, when steps fly by.
-  if (animate && catchUp <= 2) playSound(step.events);
+  const rate = (mode === 'replay' ? speed : 1) * catchUpRate;
+  const quiet = cfg().lowKey;
+  // Sound at contact; not while the queue is catching up, when steps fly by, and never in low-key mode.
+  if (animate && catchUpRate <= 2 && !quiet) playSound(before, step);
+  sendPanels(step, plan, animate, rate);
   if (field && animate) {
     // Causal order: the pitch shows first, the ball flies, runners run, then the score changes.
     // The previous play's bubble goes as soon as the next pitch is thrown.
     renderZone(step.state, true);
     if (step.events.some((e) => e.type === 'pitch')) app.querySelector('.bubble')?.classList.remove('show', 'hr');
     field.setLabel(batterLabel(step.state, plan), plan.end.get(`r${step.state.batter?.id}`)?.role === 'batter');
-    await field.play(plan, (mode === 'replay' ? speed : 1) * catchUp);
+    await field.play(plan, rate);
     if (gen !== gameGen) return;
     shown = step.state;
     renderText({ zone: false });
@@ -668,15 +906,28 @@ async function runStep(step: Step, animate: boolean, catchUp: number): Promise<v
     renderText();
   }
   // Notices go out with the score, after the play has been shown.
-  if (animate) notifyStep(before, step);
+  if (animate && !quiet) notifyStep(before, step);
+  // An auto-followed game that ended: after a while, back to the user's team (or the next tense game).
+  if (step.events.some((e) => e.type === 'gameEnd') && mode === 'live' && followMode !== 'manual') {
+    const pk = following;
+    if (endTimer) clearTimeout(endTimer);
+    endTimer = setTimeout(() => { if (view === 'game' && following === pk && followMode !== 'manual') void goHome(); }, 10 * 60_000);
+  }
   if (dev.selfcheck) selfCheck(plan);
 }
 
-function playSound(events: readonly GameEvent[]): void {
-  const pa = events.find((e) => e.type === 'plateAppearance');
-  if (pa?.type !== 'plateAppearance') return;
-  const name = pa.result === 'home_run' ? 'homeRun' : HITS.has(pa.result) ? 'hit' : null;
-  if (name && sounds.enabled(name)) { sounds.play(name); check.sounds++; }
+function sendPanels(step: Step, plan: Plan, animate: boolean, rate: number): void {
+  if (!panels || !PANELS.some((p) => cfg().panels[p])) return;
+  check.frames++;
+  panels.send({
+    state: step.state, scene: [...plan.end], ...(animate ? { plan: packPlan(plan) } : {}),
+    speed: rate, pop: animate && step.events.some((e) => e.type === 'pitch'), look: look(step.state), lang,
+  });
+}
+
+function playSound(before: GameState | undefined, step: Step): void {
+  const name = soundsFor(before, step.state, step.events).find((n) => sounds.enabled(n));
+  if (name) { sounds.play(name); check.sounds++; }
 }
 
 function batterLabel(s: GameState, plan: Plan): string {
@@ -698,20 +949,83 @@ function selfCheck(plan: Plan): void {
   if (!ok) { check.bad++; console.warn('board mismatch', [...drawn], [...plan.end]); }
 }
 
+// ---------- the schedule: scoreboard, other games, tension ----------
+
+/** Tell the schedule poller who needs it right now. */
+function updateWants(): void {
+  const n = cfg().notify;
+  const watchingLive = view === 'game' && mode === 'live';
+  const followingMine = view === 'game' && (!fav() || [shown?.teams.away.abbr, shown?.teams.home.abbr].includes(fav()));
+  // Other games' notices: all games, or the user's team while something else is on screen.
+  schedule.want('notices', inTauri && n.mode !== 'off' && !cfg().lowKey && (n.events.run || n.events.game)
+    && (!n.onlyMine || (fav() !== undefined && !(watchingLive && followingMine))));
+  schedule.want('scoreboard', boardOpen());
+  schedule.want('elsewhere', watchingLive && !cfg().lowKey);
+  renderBoard();
+}
+
+let noticeBase: Map<number, GameSnap> | null = null;
+let noticeDate = '';
+const snapOf = (c: GameCard): GameSnap => ({
+  gamePk: c.gamePk,
+  phase: c.status === 'scheduled' || c.status === 'pregame' ? 'pre' : isLive(c) || c.status === 'suspended' ? 'live' : c.status === 'final' ? 'final' : 'other',
+  away: c.away.abbr, home: c.home.abbr, runs: { away: c.away.runs ?? 0, home: c.home.runs ?? 0 },
+  ...(c.inning ? { inning: c.inning } : {}), ...(c.half ? { half: c.half } : {}),
+});
+
+schedule.subscribe((cards) => {
+  remember(cards);
+  // Other games' notices: starts, runs, finals (ARCHITECTURE 4.2).
+  if (schedule.date !== noticeDate) { noticeDate = schedule.date; noticeBase = null; }
+  const snaps = cards.map(snapOf);
+  const n = cfg().notify;
+  for (const c of diffSchedule(noticeBase, snaps)) {
+    if (n.mode === 'off' || cfg().lowKey) break;
+    // The game on screen notifies from its own plays, with more detail.
+    if (view === 'game' && mode === 'live' && c.snap.gamePk === following) continue;
+    if (n.onlyMine && (!fav() || ![c.snap.away, c.snap.home].includes(fav()!))) continue;
+    sendNotice(scheduleNotice(c, n.events, lang));
+  }
+  noticeBase = new Map(snaps.map((s) => [s.gamePk, s]));
+  // Another game's big moment, while watching this one: one tab, never a switch.
+  if (view === 'game' && mode === 'live' && !cfg().lowKey) {
+    const mine = cards.find((c) => c.gamePk === following);
+    const here = mine ? tension(mine) : 0;
+    const best = cards.filter((c) => c.gamePk !== following && isBigMoment(c) && tension(c) > here)
+      .sort((a, b) => tension(b) - tension(a))[0];
+    const key = best ? `${best.gamePk}:${best.inning}:${best.half}` : '';
+    elsewhere = best && !dismissedElsewhere.has(key) ? { key, card: best } : null;
+    renderTabs(store.current);
+  }
+  // Waiting for a game to go live (league mode, or "the most tense game").
+  if (view === 'home' && homeIdle) {
+    const best = mostTense(cards);
+    if (best) follow(best.gamePk, 'live', 'tension');
+  }
+  renderBoard();
+});
+
+function renderBoard(): void {
+  const open = boardOpen();
+  document.body.classList.toggle('has-board', open);
+  if (!open) { boardEl.innerHTML = ''; return; }
+  boardEl.innerHTML = `<div class="board-list">${boardRows(schedule.cards, { lang, current: view === 'game' ? following : undefined, showScores: cfg().replay.showScores })}</div>`;
+}
+
 // ---------- notifications ----------
 
 function configureNotices(): void {
   notifier?.configure(cfg().notify.mode, cfg().notify.marquee, {
     theme: style.theme, labels: { close: S.notify.close, replay: S.notify.replay },
   });
-  updateWatcher();
+  updateWants();
 }
 
 /** The game on screen involves the user's team (or there is no team, so the game on screen counts). */
 const followingMine = () => view === 'game' && (!fav() || [shown?.teams.away.abbr, shown?.teams.home.abbr].includes(fav()));
 
 function sendNotice(n: Notice | null): void {
-  if (!n || !notifier || cfg().notify.mode === 'off') return;
+  if (!n || !notifier || cfg().notify.mode === 'off' || cfg().lowKey) return;
   check.notices++;
   void notifier.push(n);
 }
@@ -719,65 +1033,36 @@ function sendNotice(n: Notice | null): void {
 function notifyStep(before: GameState | undefined, step: Step): void {
   const n = cfg().notify;
   if (n.mode === 'off' || (n.onlyMine && !followingMine())) return;
+  // Catching up is a replay of what already happened: no notices for it.
+  if (catchUp) return;
   sendNotice(noticeFor(before, step.state, step.events, n.events, lang, mode === 'replay'));
 }
 
-// Other games: one schedule request a minute notices starts, runs and finals (ARCHITECTURE 4.2).
-let watchTimer: ReturnType<typeof setInterval> | null = null;
-let watchBase: Map<number, GameSnap> | null = null;
-let watchDate = '';
-let watchBusy = false;
+// ---------- hotkeys (F9) ----------
 
-function updateWatcher(): void {
-  const n = cfg().notify;
-  const watching = view === 'game' && mode === 'live';
-  // Needed when other games can notify: all games, or the user's team while something else is on screen.
-  const need = inTauri && n.mode !== 'off' && (n.events.run || n.events.game)
-    && (!n.onlyMine || (fav() !== undefined && !(watching && followingMine())));
-  if (need && !watchTimer) {
-    watchBase = null;
-    void pollSchedule();
-    watchTimer = setInterval(() => void pollSchedule(), 60_000);
-  } else if (!need && watchTimer) {
-    clearInterval(watchTimer);
-    watchTimer = null;
-  }
-}
-
-function snapOf(g: ScheduleGame): GameSnap {
-  const s = mapStatus(g.status);
-  const phase = s === 'scheduled' || s === 'pregame' ? 'pre'
-    : s === 'live' || s === 'delayed' || s === 'review' || s === 'suspended' ? 'live'
-    : s === 'final' ? 'final' : 'other';
-  return {
-    gamePk: g.gamePk, phase,
-    away: g.teams.away.team.abbreviation ?? '?', home: g.teams.home.team.abbreviation ?? '?',
-    runs: { away: g.teams.away.score ?? 0, home: g.teams.home.score ?? 0 },
-    ...(g.linescore?.currentInning ? { inning: g.linescore.currentInning, half: g.linescore.isTopInning ? 'top' : 'bottom' } : {}),
-  } as GameSnap;
-}
-
-async function pollSchedule(): Promise<void> {
-  if (watchBusy) return;
-  watchBusy = true;
-  try {
-    const date = easternToday();
-    if (date !== watchDate) { watchDate = date; watchBase = null; }
-    const sched = (await fetchJson(schedulePath(date))) as { dates?: { games: ScheduleGame[] }[] };
-    const snaps = (sched.dates ?? []).flatMap((d) => d.games).map(snapOf);
-    const n = cfg().notify;
-    for (const c of diffSchedule(watchBase, snaps)) {
-      // The game on screen notifies from its own plays, with more detail.
-      if (view === 'game' && mode === 'live' && c.snap.gamePk === following) continue;
-      if (n.onlyMine && (!fav() || ![c.snap.away, c.snap.home].includes(fav()!))) continue;
-      sendNotice(scheduleNotice(c, n.events, lang));
+async function applyHotkeys(): Promise<void> {
+  if (!inTauri) return;
+  try { await unregisterAll(); } catch { /* nothing registered */ }
+  hotkeyError = false;
+  const h = cfg().hotkeys;
+  if (h.on) {
+    for (const [combo, fn] of [[h.hide, toggleHidden], [h.lowKey, toggleLowKey]] as const) {
+      if (!combo) continue;
+      try { await register(combo, (e) => { if (e.state === 'Pressed') fn(); }); } catch { hotkeyError = true; }
     }
-    watchBase = new Map(snaps.map((s) => [s.gamePk, s]));
-  } catch {
-    // offline for a minute: try again at the next tick
-  } finally {
-    watchBusy = false;
   }
+  if (view === 'settings') renderSettings();
+}
+
+/** The hide key: every Basesmall window out of sight, and back. */
+function toggleHidden(): void {
+  hiddenByKey = !hiddenByKey;
+  if (hiddenByKey) { void win?.hide(); void notifier?.clearAll(); } else void win?.show();
+  void panels?.setHidden(view !== 'game' || cfg().lowKey || hiddenByKey);
+}
+
+function toggleLowKey(): void {
+  settings.update((d) => { d.lowKey = !d.lowKey; });
 }
 
 // ---------- game: drawing ----------
@@ -792,10 +1077,17 @@ function buildGame(): void {
   partObserver?.disconnect();
   partObserver = null;
   if (view !== 'game') return;
+  const s = shown;
+  if (cfg().lowKey) {
+    app.dataset.tier = 'lowkey';
+    app.innerHTML = s ? lowKeyView(s) : '<div class="lowkey mono">…</div>';
+    renderTabs(s);
+    if (s) setGameTitle(s);
+    return;
+  }
   const r = app.getBoundingClientRect();
   if (r.height > 0) { tier = tierOf(r.height); parts = partsOf(tier, r.width); }
   app.dataset.tier = tier;
-  const s = shown;
   if (!s) {
     app.innerHTML = `<div class="bar"><span class="muted">${esc(S.ui.loading)}</span></div>`;
     renderTabs(undefined);
@@ -839,16 +1131,18 @@ function renderZone(s: GameState, pop: boolean): void {
 function renderText(opts: { zone?: boolean } = {}): void {
   const s = shown;
   if (!s || view !== 'game') return;
+  if (cfg().lowKey) { app.innerHTML = lowKeyView(s); renderTabs(s); setGameTitle(s); return; }
   const paints = paintsOf(s);
   const statusText = s.status === 'live' ? '' : S.status(s.status, s.statusDetail);
   const conn = mode === 'live' ? live.status(following) : undefined;
   const offline = conn && !conn.connected ? S.ui.reconnecting : '';
+  const proxy = proxyTag(s);
   if (tier === 'dot') {
     app.innerHTML = dotView(s, paints, parts);
   } else if (tier === 'bar') {
-    app.innerHTML = barView(s, paints, lang, parts, showPitch ? `<span class="muted">${esc(pitchText)}</span>` : barLine, statusText, offline);
+    app.innerHTML = barView(s, paints, lang, parts, showPitch ? `<span class="muted">${esc(pitchText)}</span>` : barLine, statusText, offline, proxy);
   } else {
-    app.querySelector('.hud')!.innerHTML = hudView(s, paints, lang) + (offline ? `<i class="conn" title="${esc(offline)}"></i>` : '');
+    app.querySelector('.hud')!.innerHTML = hudView(s, paints, lang, proxy) + (offline ? `<i class="conn" title="${esc(offline)}"></i>` : '');
     // Rows below first: they decide how much height the board and the zone get.
     if (tier === 'full') {
       app.querySelector('.mu')!.innerHTML = matchupView(s, lang);
@@ -863,10 +1157,15 @@ function renderText(opts: { zone?: boolean } = {}): void {
     }
   }
   renderTabs(s);
+  setGameTitle(s);
+}
+
+function setGameTitle(s: GameState): void {
   const checkText = dev.selfcheck
-    ? ` · check ${check.steps}/${check.bad} · ${frameStats()} · styles ${styles.length} style problems ${styleProblems.length} · notices ${check.notices} sounds ${check.sounds} audio ${sounds.state}`
+    ? ` · check ${check.steps}/${check.bad} · ${frameStats()} · styles ${styles.length} style problems ${styleProblems.length} · notices ${check.notices} sounds ${check.sounds} audio ${sounds.state} · frames-sent ${check.frames} · schedule ${schedule.requests}${elsewhere ? ` · elsewhere ${elsewhere.card.gamePk}` : ''}`
     : '';
-  setTitle(`Basesmall · ${s.gamePk} · ${mode} · ${s.status} · ${s.teams.away.abbr} ${s.score.away}-${s.score.home} ${s.teams.home.abbr} · ${S.inning(s.inning, s.half)} · ${s.balls}-${s.strikes} ${s.outs}out · ${elapsed(s)} · ${tier} · ${style.id}${checkText}`);
+  const modeText = `${followMode}${catchUp ? ' catchup' : ''}${cfg().lowKey ? ' lowkey' : ''}${proxyTag(s) ? ' proxy' : ''}`;
+  setTitle(`Basesmall · ${s.gamePk} · ${mode} · ${s.status} · ${s.teams.away.abbr} ${s.score.away}-${s.score.home} ${s.teams.home.abbr} · ${S.inning(s.inning, s.half)} · ${s.balls}-${s.strikes} ${s.outs}out · ${elapsed(s)} · ${cfg().lowKey ? 'lowkey' : tier} · ${style.id} · ${modeText}${checkText}`);
 }
 
 function renderBubble(statusText: string): void {
@@ -890,7 +1189,7 @@ function frameStats(): string {
 
 if ('ResizeObserver' in window) {
   new ResizeObserver(() => {
-    if (view !== 'game' || !shown) return;
+    if (view !== 'game' || !shown || cfg().lowKey) return;
     const r = app.getBoundingClientRect();
     const t = tierOf(r.height), p = partsOf(t, r.width);
     if (t !== tier || p.outs !== parts.outs || p.lastLine !== parts.lastLine || p.zone !== parts.zone) buildGame();
@@ -904,6 +1203,11 @@ function replayAction(action: string): void {
   if (action === 'size') { void cycleTier(); return; }
   if (action === 'settings') { showSettings(); return; }
   if (action === 'settings-done') { closeSettings(); return; }
+  if (action === 'home') { void goHome(); return; }
+  if (action === 'picker') { void showPicker(); return; }
+  if (action === 'scoreboard') { settings.update((d) => { d.scoreboard = !d.scoreboard; }); return; }
+  if (action === 'lowkey') { toggleLowKey(); return; }
+  if (action === 'catchup') { if (mode === 'live' && following) follow(following, 'replay', followMode, { catchUp: true }); return; }
   if (action === 'style') {
     settings.update((d) => { d.style = nextStyle(styles, style.id).id; });
     return;
@@ -931,15 +1235,27 @@ function onClick(e: MouseEvent): void {
   if (!t) return;
   const { day, tab, pk, action, pick, value, preview } = t.dataset;
   const close = t.dataset.close;
-  if (close === 'clock' || close === 'replay') setTab(close, false);
+  if (close === 'clock' || close === 'replay' || close === 'series') setTab(close, false);
+  else if (close === 'elsewhere') { if (elsewhere) dismissedElsewhere.add(elsewhere.key); elsewhere = null; renderTabs(store.current); }
   else if (t.dataset.fav) {
     const team = t.dataset.fav;
     settings.update((d) => { d.favorite = team; });
     pickerTab = null;
-    void showPicker();
+    if (team !== 'none') void goHome(); else void showPicker();
+  }
+  else if (t.dataset.after) {
+    const k = t.dataset.after as AfterOut;
+    const d = homeDecision;
+    settings.update((s) => { s.follow.after = k; if (d?.kind === 'over') s.follow.seen = seasonKey(homeTeam() ?? '', d.last); });
+    void applyAfter(k);
+  }
+  else if (t.dataset.adopt) {
+    const team = t.dataset.adopt;
+    settings.update((s) => { s.follow.adopted = team; });
+    void goHome();
   }
   else if (pick) setPath(pick, value);
-  else if (preview === 'hit' || preview === 'homeRun') sounds.play(preview, true);
+  else if (preview) sounds.play(preview as SoundName, true);
   else if (t.dataset.open) void openUrl(t.dataset.open).catch(() => { /* not in the allow list */ });
   else if (day) { pickerDate = shiftDate(pickerDate, Number(day)); pickerTab = null; void showPicker(); }
   else if (tab) { pickerTab = tab as Tab; void showPicker(); }
@@ -950,6 +1266,7 @@ function onClick(e: MouseEvent): void {
 }
 app.addEventListener('click', onClick);
 tabsEl.addEventListener('click', onClick);
+boardEl.addEventListener('click', onClick);
 
 if (win) {
   for (const el of [app, tabsEl]) {
@@ -967,13 +1284,23 @@ if (win) {
     if (m === 'solid' || m === 'semi' || m === 'clear') settings.update((d) => { d.background = m; });
   });
   void listen('open-settings', () => showSettings());
+  void listen('toggle-low-key', () => toggleLowKey());
+  void listen('toggle-scoreboard', () => settings.update((d) => { d.scoreboard = !d.scoreboard; }));
+  void listen<PanelName>('panel-closed', (e) => settings.update((d) => { d.panels[e.payload] = false; }));
+  void listen<{ name: PanelName; w: number; h: number }>('panel-size', (e) => saveSize(`size-panel-${e.payload.name}`, { w: e.payload.w, h: e.payload.h }));
 }
 
 // Open a game directly: `basesmall --game=<pk> [--mode=replay]` in the app, ?game=<pk>&mode=replay in a browser.
 // Checking aids: --tier=dot|bar|field|full --style=<id> --bg=solid|semi|clear --speed=<n> --seek=<entry>
 // [--paused] --selfcheck --press=<action>,<action> (control buttons, 2 s apart, once loaded) --settings
-// --set=<path>:<value>,... (e.g. sound.on:true,notify.mode:both).
+// --set=<path>:<value>,... (e.g. sound.on:true,notify.mode:both) --picker (the game list instead of home).
 // A checking run saves no settings, unless BASESMALL_CONFIG_DIR points it at a scratch folder.
+/** "follow.seen:2026:PHI" -> ["follow.seen", "2026:PHI"]: only the first colon separates. */
+function splitPair(pair: string): [string, string] {
+  const i = pair.indexOf(':');
+  return i < 0 ? [pair, ''] : [pair.slice(0, i), pair.slice(i + 1)];
+}
+
 async function start(): Promise<void> {
   const q = new URLSearchParams(location.search);
   let overridden = false;
@@ -981,18 +1308,18 @@ async function start(): Promise<void> {
     for (const a of await invoke<string[]>('launch_args').catch(() => [] as string[])) {
       const m = /^--(game|mode|team|seek|tier|style|bg|speed|press|set)=(.+)$/.exec(a);
       if (m) q.set(m[1]!, m[2]!);
-      for (const flag of ['paused', 'selfcheck', 'settings']) if (a === `--${flag}`) q.set(flag, '1');
+      for (const flag of ['paused', 'selfcheck', 'settings', 'picker']) if (a === `--${flag}`) q.set(flag, '1');
     }
     [configFolder, overridden] = await invoke<[string, boolean]>('config_info').catch(() => ['', false] as [string, boolean]);
     appVersion = await getVersion().catch(() => '');
   }
-  const checking = ['tier', 'style', 'bg', 'speed', 'seek', 'selfcheck', 'press', 'settings', 'set'].some((k) => q.has(k));
+  const checking = ['tier', 'style', 'bg', 'speed', 'seek', 'selfcheck', 'press', 'settings', 'set', 'picker'].some((k) => q.has(k));
   settings = await SettingsStore.open(backend, () => fromLocalStorage(legacy));
   settings.persist = !checking || overridden;
   settings.subscribe(onSettings);
   // --set=sound.on:true,notify.mode:both — change settings as the settings screen would.
   for (const pair of (q.get('set') ?? '').split(',').filter(Boolean)) {
-    const [path, raw = ''] = pair.split(':');
+    const [path, raw] = splitPair(pair);
     if (path) setPath(path, raw === 'true' ? true : raw === 'false' ? false : raw !== '' && !Number.isNaN(Number(raw)) ? Number(raw) : raw);
   }
   await loadUserStyles();
@@ -1013,6 +1340,8 @@ async function start(): Promise<void> {
   applyStyle();
   applyBackground();
   configureNotices();
+  void applyHotkeys();
+  void panels?.sync(cfg().panels);
   if (q.has('seek')) pendingSeek = { index: Number(q.get('seek')), pause: q.has('paused') };
   const t = q.get('tier');
   if (t === 'dot' || t === 'bar' || t === 'field' || t === 'full') dev.tier = t;
@@ -1021,13 +1350,14 @@ async function start(): Promise<void> {
   // Each press is a control button ("size") or a setting change ("language:en"), 2 s apart.
   const presses = (q.get('press') ?? '').split(',').filter(Boolean);
   presses.forEach((action, i) => setTimeout(() => {
-    const [path, raw] = action.split(':');
-    if (raw === undefined) replayAction(action);
-    else setPath(path!, raw === 'true' ? true : raw === 'false' ? false : raw);
+    if (!action.includes(':')) { replayAction(action); return; }
+    const [path, raw] = splitPair(action);
+    setPath(path, raw === 'true' ? true : raw === 'false' ? false : raw);
   }, 6000 + i * 2000));
   if (q.has('game')) follow(Number(q.get('game')), q.get('mode') === 'replay' ? 'replay' : 'live');
   else if (cfg().favorite === null) showChooser();
-  else void showPicker();
+  else if (q.has('picker')) void showPicker();
+  else void goHome();
   if (q.has('settings')) setTimeout(showSettings, 1500);
 }
 void start();

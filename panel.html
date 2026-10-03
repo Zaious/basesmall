@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Basesmall</title>
     <link rel="stylesheet" href="/src/ui/app.css" />
+    <link rel="stylesheet" href="/src/panels/panel.css" />
   </head>
   <body>
-    <nav id="tabs" class="bg-solid" aria-label="tabs"></nav>
-    <main id="app" class="bg-solid"></main>
-    <section id="board" class="bg-solid" aria-label="scoreboard"></section>
+    <main id="panel" class="bg-solid"></main>
+    <button id="close" aria-label="×">×</button>
     <div id="grip" aria-hidden="true"></div>
-    <script type="module" src="/src/ui/main.ts"></script>
+    <script type="module" src="/src/panels/page.ts"></script>
   </body>
 </html>

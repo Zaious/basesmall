@@ -202,6 +202,25 @@ GET /api/v1/schedule?sportId=1&teamId=143&startDate=2026-09-20&endDate=2026-10-1
 - 實例：費城人 10/1 的 `seriesStatus` 為「ATL wins 2-1」、`isOver=true`；到 10/10 為止沒有其他費城人的賽程，可以據此判定淘汰。
 - 時區：`gameDate` 是 UTC（例如 `2026-10-02T00:00:00Z`），`officialDate` 是美國當地日期（`2026-10-01`），顯示時要換算成使用者時區。
 
+## 7.3 M5：季後賽、先發、淘汰判定（2026-10-03 補測）
+
+腳本 `scripts/probe/11-postseason.mjs`（看欄位）與 `scripts/probe/12-schedule-fixtures.mjs`（存成測試夾具，不提交）。賽程請求一律 `hydrate=team,linescore,seriesStatus,probablePitcher`：
+
+```
+GET /api/v1/schedule?sportId=1&date=2026-10-03&hydrate=...          -> 200, 14,319 bytes, 4 場（分區系列賽第 1 戰）
+GET /api/v1/schedule?sportId=1&teamId=143&startDate=...&endDate=...  -> 200, 41,974 bytes
+GET /api/v1/schedule/postseason/series?sportId=1&season=2026         -> 200, 67,204 bytes, 11 個系列
+GET /api/v1/seasons/2027?sportId=1                                   -> 200, 830 bytes
+```
+
+- `gameType`：`R` 例行賽、`F` 外卡、`D` 分區、`L` 聯盟冠軍、`W` 世界大賽。
+- `seriesStatus`：`gameNumber`、`totalGames`、`wins`、`losses`、`isTied`、`isOver`、`shortName`（分區賽是 `ALDS`，外卡賽是 `NL Wild Card Series`，不是縮寫）、`shortDescription`（`ALDS Game 1`）、`result`（`ATL wins 2-1`，只有英文）。`wins`／`losses` 是領先那一隊的，誰領先看 `winningTeam`／`losingTeam` 的 id（只有 id，沒有縮寫）。
+- 淘汰判定的實例：費城人最後一場 849844（外卡第 3 戰）`isOver=true`、`losingTeam=143`，之後沒有任何排定的比賽。洋基同一天有分區系列賽第 1–5 戰（含視需要才打的場次）。天使最後一場是例行賽，之後沒有比賽：沒打進季後賽。
+- 先發投手：`teams.{away,home}.probablePitcher.fullName`，賽前就有（ATL@LAD 當時客隊還沒公布）。
+- 之後幾輪的對戰在賽程上以佔位隊伍出現（「AL High」「NL Low」之類），不是真的球隊，選隊時要濾掉。
+- 下一季開幕：`/api/v1/seasons/2027` 的 `regularSeasonStartDate` 是 `2027-03-25`。
+- 直播中賽程的 `linescore.offense`（壘上跑者）仍未驗證：量測時沒有比賽在打。計分板有就畫、沒有就不畫。
+
 ## 7.2 重播節奏（849841 的真實時間戳）
 
 | 間隔 | 次數 | 中位數 | 25–75 百分位 | 最大 |

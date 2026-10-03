@@ -6,7 +6,7 @@ A tiny, quiet desktop view of the game you can't watch.
 
 Basesmall is an unofficial desktop companion for following live MLB games. It sits in a corner of your screen and keeps your team's game going as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate, and which way the ball went. Enough to know what is happening at a glance, without video, without sound unless you want it, and without looking like you are watching sports.
 
-> **Status: early development.** There is no installer yet. On Windows the floating window works from source: live games and replays, four sizes, flat and 2.5D styles, sound, settings and notifications.
+> **Status: early development.** There is no installer yet. On Windows the floating window works from source: live games and replays, four sizes, flat and 2.5D styles, sound, settings, notifications, following your team, the league scoreboard and low-key mode.
 
 ## What it will do
 
@@ -25,7 +25,7 @@ Basesmall is an unofficial desktop companion for following live MLB games. It si
 - [~] **M2** Floating window (Tauri, Windows first) and live data: working on Windows; live measurement pending
 - [x] **M3** The board: styles, team colours, size tiers, animation. A 12-inning game replayed in the app with every step's board checked against the official state: no mismatches, longest gap between animation frames 14.5 ms.
 - [x] **M4** Sound, settings and notifications. Synthesized hit and home-run sounds (off by default), a settings screen saved to a file, and corner cards or a ticker for the plays you choose, which never take focus from what you are typing in.
-- [ ] **M5** League scoreboard, postseason, low-key mode
+- [x] **M5** Follows your team on its own (countdown and starters before a game, a choice of what to watch once its season ends), a league scoreboard drawer, postseason series, low-key mode and hotkeys, the optional strike zone / bases / matchup / line score windows, catching up on a game joined late, and a quieter set of extra sounds.
 - [ ] **M6** Installers and a guide to writing styles
 
 ## Development
@@ -43,7 +43,7 @@ npm run tauri build -- --no-bundle    # release binary in src-tauri/target/relea
 
 Open a game directly: `basesmall --game=<gamePk>` follows it live, `--mode=replay` replays a finished one.
 
-In a game, hover over the window for the controls. **⤢** steps through the four sizes (bar, field, full, dot), or drag the bottom-right corner. **◇** switches style. **⚙** opens settings (also in the game list and the tray menu). Settings are saved to `settings.json` in the app's config folder (on Windows, `%APPDATA%\io.github.zaious.basesmall\`).
+With a team chosen, Basesmall opens on that team: its game if it is on, otherwise the countdown to the next one. In a game, hover over the window for the controls. **⤢** steps through the four sizes (bar, field, full, dot), or drag the bottom-right corner. **◇** switches style, **▤** opens the league scoreboard, **◱** low-key mode, **⏩** catches up on a game you joined late, **⚙** opens settings (also in the game list and the tray menu). Ctrl+Alt+Shift+B hides every Basesmall window; Ctrl+Alt+Shift+L toggles low-key mode. Settings are saved to `settings.json` in the app's config folder (on Windows, `%APPDATA%\io.github.zaious.basesmall\`).
 
 The fixture script sends a handful of requests, one at a time, and caches every response so re-runs stay offline. MLB responses are never committed.
 

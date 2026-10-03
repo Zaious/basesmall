@@ -12,6 +12,11 @@ export type MarqueeSpot = 'top' | 'bottom' | 'bar';
 export const NOTIFY_KINDS = ['run', 'hr', 'hit', 'walk', 'k', 'out', 'sb', 'pchange', 'half', 'game'] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 export type Size = { w: number; h: number };
+/** What to do once the user's team is out for the season (PRD §3.3). */
+export type AfterOut = 'tension' | 'adopt' | 'manual' | 'rest';
+export const PANELS = ['zone', 'bases', 'matchup', 'linescore'] as const;
+export type PanelName = (typeof PANELS)[number];
+export const EXTRA_SOUNDS = ['strike', 'fullCount', 'bunt', 'strikeout'] as const;
 
 export interface Settings {
   version: typeof SETTINGS_VERSION;
@@ -20,7 +25,7 @@ export interface Settings {
   language: Language;
   style: string;
   background: Background;
-  tabs: { clock: boolean; replay: boolean };
+  tabs: { clock: boolean; replay: boolean; series: boolean };
   sound: {
     /** Master switch. Sound starts muted (PRD §6). */
     muted: boolean;
@@ -28,8 +33,27 @@ export interface Settings {
     volume: number;
     hit: boolean;
     homeRun: boolean;
+    /** The quieter vocabulary (F13), each off until chosen. */
+    strike: boolean;
+    fullCount: boolean;
+    bunt: boolean;
+    strikeout: boolean;
   };
   replay: { pace: PaceSetting; showScores: boolean };
+  follow: {
+    after: AfterOut;
+    /** The team adopted for the postseason ("adopt"), cleared when it ends. */
+    adopted: string | null;
+    /** Season and team the "what now?" card was shown for ("2026:PHI"), so it shows once. */
+    seen: string;
+  };
+  /** The scoreboard drawer under the window is open. */
+  scoreboard: boolean;
+  /** Low-key mode: a plain, colourless status strip; no notices or sounds. */
+  lowKey: boolean;
+  hotkeys: { on: boolean; hide: string; lowKey: string };
+  /** The optional windows that are open. */
+  panels: Record<PanelName, boolean>;
   notify: {
     mode: NotifyMode;
     marquee: MarqueeSpot;
@@ -47,9 +71,15 @@ export const DEFAULTS: Settings = {
   language: 'auto',
   style: 'iso',
   background: 'solid',
-  tabs: { clock: true, replay: true },
-  sound: { muted: true, volume: 0.6, hit: true, homeRun: true },
+  tabs: { clock: true, replay: true, series: true },
+  sound: { muted: true, volume: 0.6, hit: true, homeRun: true, strike: false, fullCount: false, bunt: false, strikeout: false },
   replay: { pace: 'compact', showScores: false },
+  follow: { after: 'manual', adopted: null, seen: '' },
+  scoreboard: false,
+  lowKey: false,
+  // Three modifiers: two-modifier combinations are often taken (Ctrl+Alt+L reformats code in some editors).
+  hotkeys: { on: true, hide: 'CmdOrCtrl+Alt+Shift+B', lowKey: 'CmdOrCtrl+Alt+Shift+L' },
+  panels: { zone: false, bases: false, matchup: false, linescore: false },
   notify: {
     mode: 'toast',
     marquee: 'bottom',
@@ -83,6 +113,8 @@ export function normalize(raw: unknown): Settings {
   const d = DEFAULTS;
   const fav = o.favorite;
   const sound = obj(o.sound), replay = obj(o.replay), notify = obj(o.notify), tabs = obj(o.tabs), events = obj(notify.events);
+  const follow = obj(o.follow), hotkeys = obj(o.hotkeys), panels = obj(o.panels);
+  const combo = (v: unknown, fallback: string) => (typeof v === 'string' && /^[A-Za-z0-9+]{0,60}$/.test(v) ? v : fallback);
   const volume = Number(sound.volume);
   const sizes: Record<string, Size> = {};
   for (const [k, v] of Object.entries(obj(o.sizes))) {
@@ -95,14 +127,27 @@ export function normalize(raw: unknown): Settings {
     language: oneOf(o.language, ['auto', 'zh-Hant', 'en'], d.language),
     style: typeof o.style === 'string' && STYLE_ID.test(o.style) ? o.style : d.style,
     background: oneOf(o.background, ['solid', 'semi', 'clear'], d.background),
-    tabs: { clock: bool(tabs.clock, d.tabs.clock), replay: bool(tabs.replay, d.tabs.replay) },
+    tabs: { clock: bool(tabs.clock, d.tabs.clock), replay: bool(tabs.replay, d.tabs.replay), series: bool(tabs.series, d.tabs.series) },
     sound: {
       muted: bool(sound.muted, d.sound.muted),
       volume: Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : d.sound.volume,
       hit: bool(sound.hit, d.sound.hit),
       homeRun: bool(sound.homeRun, d.sound.homeRun),
+      strike: bool(sound.strike, d.sound.strike),
+      fullCount: bool(sound.fullCount, d.sound.fullCount),
+      bunt: bool(sound.bunt, d.sound.bunt),
+      strikeout: bool(sound.strikeout, d.sound.strikeout),
     },
     replay: { pace: oneOf(replay.pace, ['compact', 'real', 'fixed', 'results'], d.replay.pace), showScores: bool(replay.showScores, d.replay.showScores) },
+    follow: {
+      after: oneOf(follow.after, ['tension', 'adopt', 'manual', 'rest'], d.follow.after),
+      adopted: typeof follow.adopted === 'string' && ABBR.test(follow.adopted) ? follow.adopted : null,
+      seen: typeof follow.seen === 'string' && /^(\d{4}:[A-Z]{2,3})?$/.test(follow.seen) ? follow.seen : '',
+    },
+    scoreboard: bool(o.scoreboard, d.scoreboard),
+    lowKey: bool(o.lowKey, d.lowKey),
+    hotkeys: { on: bool(hotkeys.on, d.hotkeys.on), hide: combo(hotkeys.hide, d.hotkeys.hide), lowKey: combo(hotkeys.lowKey, d.hotkeys.lowKey) },
+    panels: Object.fromEntries(PANELS.map((p) => [p, bool(panels[p], false)])) as Record<PanelName, boolean>,
     notify: {
       mode: oneOf(notify.mode, ['toast', 'marquee', 'both', 'off'], d.notify.mode),
       marquee: oneOf(notify.marquee, ['top', 'bottom', 'bar'], d.notify.marquee),

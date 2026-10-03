@@ -1,0 +1,17 @@
+/* An optional window: one part of the game, drawn like the main window's version of it. */
+#panel { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px; padding: 6px; gap: 5px; }
+#panel.bg-solid { background: var(--background); border: 1px solid var(--border); }
+#panel.bg-semi { background: color-mix(in srgb, var(--background) 62%, transparent); border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+#panel.bg-clear { background: transparent; border: 1px solid transparent; }
+#panel svg.zone, #panel svg.field { flex: 1 1 auto; width: 100%; min-height: 0; border-radius: 8px; }
+.bg-solid #panel svg.zone, #panel.bg-solid svg.zone { background: var(--panel); }
+#panel.bg-semi svg.zone { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+#panel.bg-clear svg.zone { background: color-mix(in srgb, var(--panel) 80%, transparent); }
+#panel .pcap { display: flex; height: 22px; flex: 0 0 22px; font-size: 11px; justify-content: center; gap: 5px; padding: 0 7px; align-items: center; border-radius: 999px; }
+#panel.bg-solid .pcap, #panel.bg-solid .cap { background: var(--panel); }
+#panel .mu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; align-items: center; }
+#panel.matchup, #panel.linescore { justify-content: center; }
+#close { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 5px; padding: 0; line-height: 16px; color: var(--muted);
+  opacity: 0; transition: opacity .15s; z-index: 5; background: color-mix(in srgb, var(--panel) 90%, transparent); }
+body:hover #close { opacity: .8; }
+#close:hover { opacity: 1; color: var(--text); }

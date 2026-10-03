@@ -37,12 +37,23 @@ describe('settings schema', () => {
     expect(s.language).toBe('auto');
     expect(s.style).toBe('iso');
     expect(s.background).toBe('solid');
-    expect(s.sound).toEqual({ muted: false, volume: 1, hit: true, homeRun: true });
+    expect(s.sound).toEqual({ muted: false, volume: 1, hit: true, homeRun: true, strike: false, fullCount: false, bunt: false, strikeout: false });
     expect(s.notify.mode).toBe('both');
     expect(s.notify.events.hr).toBe(false);
     expect(s.notify.events).not.toHaveProperty('bogus');
     expect(s.sizes).toEqual({ 'size-game': { w: 480, h: 160 } });
     expect(s).not.toHaveProperty('extra');
+  });
+
+  it('M5 settings: safe defaults, and bad values fall back', () => {
+    const d = normalize({});
+    expect(d.follow).toEqual({ after: 'manual', adopted: null, seen: '' });
+    expect(d.panels).toEqual({ zone: false, bases: false, matchup: false, linescore: false });
+    expect(d.hotkeys.hide).toBe('CmdOrCtrl+Alt+Shift+B');
+    const bad = normalize({ follow: { after: 'party', adopted: 'x', seen: 'last year' }, hotkeys: { hide: 'Ctrl+<script>' }, panels: { zone: 'yes', bases: true } });
+    expect(bad.follow).toEqual({ after: 'manual', adopted: null, seen: '' });
+    expect(bad.hotkeys.hide).toBe('CmdOrCtrl+Alt+Shift+B');
+    expect(bad.panels).toEqual({ zone: false, bases: true, matchup: false, linescore: false });
   });
 
   it('only accepts a team abbreviation, "none", or no choice yet', () => {

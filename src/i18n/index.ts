@@ -2,7 +2,8 @@
 // structured events (never from MLB's English description), so both languages read naturally.
 // Player names are not translated.
 
-import type { GameEvent, GameStatus, Half, Hand, PitchMark } from '../model/types.ts';
+import type { GameEvent, GameStatus, Half, Hand, PitchMark, Side } from '../model/types.ts';
+import type { Series } from '../data/mlb/schedule.ts';
 import type { Tier } from '../render/tiers.ts';
 import type { NotifyKind } from '../settings/schema.ts';
 
@@ -79,6 +80,28 @@ interface Strings {
     replay: string;
     close: string;
   };
+  /** Postseason series: "美聯分區 第 1 戰" / "ALDS G1", and where it stands. */
+  series(s: Series, gameType: string, abbr: Record<Side, string>): string;
+  /** "3 小時 12 分" / "3 h 12 min". */
+  duration(ms: number): string;
+  /** Following the user's team, the scoreboard and the M5 modes. */
+  follow: {
+    firstPitch(time: string, wait: string): string;
+    next(when: string): string;
+    starters(away: string, home: string): string;
+    over: Record<'eliminated' | 'missed' | 'champion' | 'advanced', (team: string) => string>;
+    offseason(days: number): string;
+    noTeamGames: string;
+    replayLast: string; allGames: string; scoreboard: string; home: string;
+    afterTitle: string;
+    after: Record<'tension' | 'adopt' | 'manual' | 'rest', string>;
+    adoptPick: string;
+    proxy: string; proxyTitle: string;
+    elsewhere(inning: string, score: string): string;
+    catchUp: string; catchingUp: string;
+    lowKey: string;
+    noLiveGames: string;
+  };
   /** The settings screen. */
   set: {
     title: string; done: string;
@@ -92,6 +115,11 @@ interface Strings {
     events: string; onlyMine: string;
     replay: string; pace: string; paces: Record<'compact' | 'real' | 'fixed' | 'results', string>; showScores: string;
     about: string; aboutText: string; support: string; source: string; stylesFolder: string;
+    more: string; strike: string; fullCount: string; bunt: string; strikeout: string;
+    after: string;
+    panels: string; panel: Record<'zone' | 'bases' | 'matchup' | 'linescore', string>;
+    hotkeys: string; hotkeysOn: string; hide: string; hotkeyBad: string;
+    seriesTab: string;
   };
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
@@ -173,6 +201,41 @@ const zh: Strings = {
     halfOver: (inning) => `${inning}結束`,
     gameStart: '開賽', gameEnd: '終場', replay: '重播', close: '關閉通知',
   },
+  series(s, type, abbr) {
+    const league = s.league === 'AL' ? '美聯' : s.league === 'NL' ? '國聯' : '';
+    const round = ({ F: '外卡', D: '分區', L: '冠軍', W: '世界大賽' } as Record<string, string>)[type] ?? '';
+    const lead: Side | undefined = s.wins.away > s.wins.home ? 'away' : s.wins.home > s.wins.away ? 'home' : undefined;
+    const hi = Math.max(s.wins.away, s.wins.home), lo = Math.min(s.wins.away, s.wins.home);
+    const state = s.over && s.winner ? `${abbr[s.winner]} ${hi}-${lo} ${type === 'W' ? '奪冠' : '晉級'}`
+      : lead ? `${abbr[lead]} ${hi}-${lo} 領先` : `${hi}-${lo} 平手`;
+    return `${league}${round} 第 ${s.game} 戰 · ${state}`;
+  },
+  duration(ms) {
+    const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
+    return d ? `${d} 天 ${h} 小時` : h ? `${h} 小時 ${m % 60} 分` : `${m % 60} 分`;
+  },
+  follow: {
+    firstPitch: (time, wait) => `${time} 開賽 · 還有 ${wait}`,
+    next: (when) => `下一場 ${when}`,
+    starters: (a, h) => `先發 ${a} vs ${h}`,
+    over: {
+      eliminated: (t) => `${t} 的季後賽結束了`,
+      missed: (t) => `${t} 沒有打進季後賽`,
+      champion: (t) => `${t} 拿下世界大賽冠軍`,
+      advanced: (t) => `${t} 晉級，等下一輪賽程`,
+    },
+    offseason: (n) => `開季倒數 ${n} 天`,
+    noTeamGames: '最近沒有賽程',
+    replayLast: '重播上一場', allGames: '選場清單', scoreboard: '計分板', home: '主隊',
+    afterTitle: '接下來要怎麼看？',
+    after: { tension: '每天自動跟最緊張的一場', adopt: '季後賽期間暫時支持一隊', manual: '我自己挑（打開計分板）', rest: '先休息，明年開季再叫我' },
+    adoptPick: '季後賽期間支持哪一隊？',
+    proxy: '代看', proxyTitle: '畫面上不是你的主隊',
+    elsewhere: (inning, score) => `另一場 ${inning} · ${score}`,
+    catchUp: '從頭快轉', catchingUp: '快轉中',
+    lowKey: '低調模式',
+    noLiveGames: '現在沒有比賽在打',
+  },
   set: {
     title: '設定', done: '完成',
     team: '主隊', change: '更改',
@@ -187,6 +250,11 @@ const zh: Strings = {
     replay: '重播', pace: '節奏', paces: { compact: '緊湊', real: '原速', fixed: '每球 5 秒', results: '只看結果' }, showScores: '選場時顯示比分',
     about: '關於', aboutText: '非官方的球迷專案，與 MLB、MLBAM、球員工會或任何球隊無關。比賽資料來自 MLB Stats API，由你的電腦直接取得，僅供個人、非商業使用。',
     support: '請我喝杯咖啡', source: '原始碼', stylesFolder: '自訂風格資料夾',
+    more: '更多聲音', strike: '好球', fullCount: '滿球數', bunt: '觸擊', strikeout: '三振',
+    after: '主隊淘汰後',
+    panels: '選配視窗', panel: { zone: '好球帶', bases: '壘包', matchup: '投打對決', linescore: '逐局比分' },
+    hotkeys: '熱鍵', hotkeysOn: '開啟熱鍵', hide: '隱藏／顯示', hotkeyBad: '這組按鍵無法使用（格式不對或已被佔用）',
+    seriesTab: '系列賽',
   },
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
@@ -269,6 +337,39 @@ const en: Strings = {
     halfOver: (inning) => `End of ${inning}`,
     gameStart: 'First pitch', gameEnd: 'Final', replay: 'Replay', close: 'Close notification',
   },
+  series(s, type, abbr) {
+    const round = type === 'W' ? 'WS' : `${s.league}${({ F: 'WC', D: 'DS', L: 'CS' } as Record<string, string>)[type] ?? ''}`;
+    const lead: Side | undefined = s.wins.away > s.wins.home ? 'away' : s.wins.home > s.wins.away ? 'home' : undefined;
+    const hi = Math.max(s.wins.away, s.wins.home), lo = Math.min(s.wins.away, s.wins.home);
+    const state = s.over && s.winner ? `${abbr[s.winner]} wins ${hi}-${lo}` : lead ? `${abbr[lead]} leads ${hi}-${lo}` : `tied ${hi}-${lo}`;
+    return `${round} G${s.game} · ${state}`;
+  },
+  duration(ms) {
+    const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
+    return d ? `${d} d ${h} h` : h ? `${h} h ${m % 60} min` : `${m % 60} min`;
+  },
+  follow: {
+    firstPitch: (time, wait) => `First pitch ${time} · in ${wait}`,
+    next: (when) => `Next: ${when}`,
+    starters: (a, h) => `Starters ${a} vs ${h}`,
+    over: {
+      eliminated: (t) => `${t}'s postseason is over`,
+      missed: (t) => `${t} missed the postseason`,
+      champion: (t) => `${t} won the World Series`,
+      advanced: (t) => `${t} advanced; next round not scheduled yet`,
+    },
+    offseason: (n) => `${n} days to Opening Day`,
+    noTeamGames: 'No games scheduled soon',
+    replayLast: 'Replay last game', allGames: 'All games', scoreboard: 'Scoreboard', home: 'My team',
+    afterTitle: 'What now?',
+    after: { tension: 'Follow the most tense game each day', adopt: 'Adopt a team for the postseason', manual: "I'll pick (open the scoreboard)", rest: 'Rest until next season' },
+    adoptPick: 'Which team for the postseason?',
+    proxy: 'Guest', proxyTitle: 'Not your team on screen',
+    elsewhere: (inning, score) => `Elsewhere: ${inning} · ${score}`,
+    catchUp: 'Catch up', catchingUp: 'Catching up',
+    lowKey: 'Low-key',
+    noLiveGames: 'No games in progress',
+  },
   set: {
     title: 'Settings', done: 'Done',
     team: 'My team', change: 'Change',
@@ -283,6 +384,11 @@ const en: Strings = {
     replay: 'Replay', pace: 'Pace', paces: { compact: 'Compact', real: 'Real time', fixed: '5 s a pitch', results: 'Results only' }, showScores: 'Show scores when picking',
     about: 'About', aboutText: 'An unofficial fan project, not affiliated with MLB, MLBAM, the MLBPA or any team. Game data comes from the MLB Stats API, fetched by your own computer, for personal, non-commercial use.',
     support: 'Buy me a coffee', source: 'Source code', stylesFolder: 'Custom styles folder',
+    more: 'More sounds', strike: 'Strike', fullCount: 'Full count', bunt: 'Bunt', strikeout: 'Strikeout',
+    after: 'When my team is out',
+    panels: 'Extra windows', panel: { zone: 'Strike zone', bases: 'Bases', matchup: 'Matchup', linescore: 'Line score' },
+    hotkeys: 'Hotkeys', hotkeysOn: 'Hotkeys on', hide: 'Hide / show', hotkeyBad: "That key combination can't be used (bad format or already taken)",
+    seriesTab: 'Series',
   },
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',

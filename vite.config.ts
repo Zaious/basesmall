@@ -6,6 +6,6 @@ export default defineConfig({
   server: { port: 1420, strictPort: true },
   envPrefix: ['VITE_', 'TAURI_ENV_'],
   // Two pages: the main window, and the notification windows (notify.html#toast / #marquee).
-  build: { target: 'es2022', outDir: 'dist', emptyOutDir: true, rollupOptions: { input: { main: 'index.html', notify: 'notify.html' } } },
+  build: { target: 'es2022', outDir: 'dist', emptyOutDir: true, rollupOptions: { input: { main: 'index.html', notify: 'notify.html', panel: 'panel.html' } } },
   test: { include: ['tests/**/*.test.ts'] },
 });

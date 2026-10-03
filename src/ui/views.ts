@@ -29,9 +29,20 @@ export function miniDiamond(s: GameState, paint: Paint, size: 'small' | 'normal'
     (Object.keys(at) as Base[]).map((b) => sq(at[b], !!s.bases[b])).join('')}</svg>`;
 }
 
-export function scoreHtml(s: GameState, paints: Record<Side, Paint>, withAbbr: boolean): string {
+export function scoreHtml(s: GameState, paints: Record<Side, Paint>, withAbbr: boolean, proxy?: { text: string; title: string }): string {
   const ab = (side: Side) => (withAbbr ? `<span class="muted">${esc(s.teams[side].abbr)}</span>` : '');
-  return `${dot(paints.away)}${ab('away')}${s.score.away}<span class="muted">:</span>${s.score.home}${ab('home')}${dot(paints.home)}`;
+  // "代看": the game on screen is not the user's team (PRD §3.3).
+  const tag = proxy ? `<span class="proxy" title="${esc(proxy.title)}">${esc(proxy.text)}</span>` : '';
+  return `${dot(paints.away)}${ab('away')}${s.score.away}<span class="muted">:</span>${s.score.home}${ab('home')}${dot(paints.home)}${tag}`;
+}
+
+/**
+ * Low-key mode (F8): a plain strip someone walking past will not read as sports. Numbers only, in
+ * the muted text colour, no team colours, no diamond: "3–2 ▲7 ••".
+ */
+export function lowKeyView(s: GameState): string {
+  const outs = '•'.repeat(Math.min(3, s.outs));
+  return `<div class="lowkey mono">${s.score.away}–${s.score.home}<span>${s.half === 'top' ? '▲' : '▼'}${s.inning}</span><span>${outs}</span></div>`;
 }
 
 /** Dot tier: a pill with the score, the inning, a tiny diamond and the outs. */
@@ -45,11 +56,11 @@ export function dotView(s: GameState, paints: Record<Side, Paint>, parts: TierPa
 }
 
 /** Bar tier: the prototype's control bar, two lines on the left, the latest pitch or play on the right. */
-export function barView(s: GameState, paints: Record<Side, Paint>, lang: Lang, parts: TierParts, lastHtml: string, statusText: string, offline: string): string {
+export function barView(s: GameState, paints: Record<Side, Paint>, lang: Lang, parts: TierParts, lastHtml: string, statusText: string, offline: string, proxy?: { text: string; title: string }): string {
   const S = STRINGS[lang];
   return `<div class="bar">
       <div class="sb">
-        <div class="l1">${scoreHtml(s, paints, true)}</div>
+        <div class="l1">${scoreHtml(s, paints, true, proxy)}</div>
         <div class="l2"><span>${esc(S.inning(s.inning, s.half))}</span><span class="mono">${count(s)}</span><span class="lamps">${lamps(Math.min(3, s.outs), 3, 'o')}</span></div>
       </div>
       ${miniDiamond(s, paints[batting(s)], 'normal')}
@@ -59,11 +70,13 @@ export function barView(s: GameState, paints: Record<Side, Paint>, lang: Lang, p
 }
 
 /** Field and full tiers: the capsules on the left. */
-export function hudView(s: GameState, paints: Record<Side, Paint>, lang: Lang): string {
+export function hudView(s: GameState, paints: Record<Side, Paint>, lang: Lang, proxy?: { text: string; title: string }): string {
   const S = STRINGS[lang];
+  // The score capsule is full; "代看" sits in the inning capsule beside it.
+  const tag = proxy ? `<span class="proxy" title="${esc(proxy.title)}">${esc(proxy.text)}</span>` : '';
   return `
       <div class="cap score">${scoreHtml(s, paints, true)}</div>
-      <div class="cap"><span>${esc(S.inning(s.inning, s.half))}</span><span class="lamps">${lamps(Math.min(3, s.outs), 3, 'o')}</span></div>
+      <div class="cap"><span>${esc(S.inning(s.inning, s.half))}</span><span class="lamps">${lamps(Math.min(3, s.outs), 3, 'o')}</span>${tag}</div>
       <div class="cap"><span class="muted mono">B</span><span class="lamps">${lamps(Math.min(3, s.balls), 3, 'b')}</span><span class="muted mono">S</span><span class="lamps">${lamps(Math.min(2, s.strikes), 2, 's')}</span></div>
       <div class="cap pit"><span class="muted">${esc(S.ui.pitcher)}</span><b>${esc(s.pitcher?.short ?? '')}</b><span class="mono muted">${s.pitcher?.pitches ?? ''}</span></div>`;
 }

@@ -104,6 +104,8 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        // Hide / show and low-key mode from anywhere (F9); the web view registers the keys.
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         // Closing the main window quits, notification windows included; otherwise the app would
         // keep running with only a ticker or a card left on screen.
         .on_window_event(|window, event| {
@@ -115,6 +117,8 @@ pub fn run() {
         .setup(|app| {
             let toggle = MenuItem::with_id(app, "toggle", "Show / hide", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
+            let low_key = MenuItem::with_id(app, "low_key", "Low-key mode", true, None::<&str>)?;
+            let scoreboard = MenuItem::with_id(app, "scoreboard", "Scoreboard", true, None::<&str>)?;
             let click_through =
                 CheckMenuItem::with_id(app, "click_through", "Click-through", true, false, None::<&str>)?;
             let on_top = CheckMenuItem::with_id(app, "on_top", "Always on top", true, true, None::<&str>)?;
@@ -124,7 +128,10 @@ pub fn run() {
             let background = Submenu::with_items(app, "Background", true, &[&bg_solid, &bg_semi, &bg_clear])?;
             let quit = MenuItem::with_id(app, "quit", "Quit Basesmall", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
-            let menu = Menu::with_items(app, &[&toggle, &settings, &click_through, &on_top, &background, &separator, &quit])?;
+            let menu = Menu::with_items(
+                app,
+                &[&toggle, &settings, &low_key, &scoreboard, &click_through, &on_top, &background, &separator, &quit],
+            )?;
 
             let ct = click_through.clone();
             let ot = on_top.clone();
@@ -153,6 +160,13 @@ pub fn run() {
                         "settings" => {
                             let _ = window.show();
                             let _ = window.emit("open-settings", ());
+                        }
+                        "low_key" => {
+                            let _ = window.emit("toggle-low-key", ());
+                        }
+                        "scoreboard" => {
+                            let _ = window.show();
+                            let _ = window.emit("toggle-scoreboard", ());
                         }
                         id if id.starts_with("bg:") => {
                             let _ = window.emit("bg-mode", &id[3..]);
