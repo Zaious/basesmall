@@ -40,6 +40,11 @@ const CALL: Record<PitchMark['call'], { zh: string; en: string }> = {
   inPlay: { zh: '擊出', en: 'In play' }, hitByPitch: { zh: '觸身', en: 'Hit by pitch' }, other: { zh: '', en: '' },
 };
 
+/** The call alone: "Foul", "界外". */
+export function callWord(call: PitchMark['call'], lang: Lang): string {
+  return CALL[call][lang === 'zh-Hant' ? 'zh' : 'en'];
+}
+
 /** "4-Seam 95 · Called strike": one pitch, short enough for the score bar. */
 export function pitchLine(p: PitchMark, lang: Lang): string {
   const k = lang === 'zh-Hant' ? 'zh' : 'en';

@@ -176,12 +176,45 @@ describe('strike zone', () => {
   ];
 
   it('draws one numbered dot per located pitch, the newest ringed and popping in', () => {
-    const svg = zoneSvg(pitches, { w: 118, h: 150, iso: true, theme, batterSide: 'L', popLast: true, noData: 'NO-LOCATIONS' });
+    const svg = zoneSvg(pitches, { w: 118, h: 150, iso: true, theme, batter: { side: 'L', label: 'LHB' }, popLast: true, noData: 'NO-LOCATIONS' });
     expect(svg.match(/data-pitch=/g)).toHaveLength(2);
     expect(svg).toContain(`fill="${theme.ball}"`);
     expect(svg).toContain(`fill="${theme.strike}"`);
     expect(svg.match(/class="pop"/g)).toHaveLength(1);
     expect(svg).not.toContain('NO-LOCATIONS'); // some pitches have locations, so no notice
+    // every dot carries its number
+    for (const n of [1, 2]) expect(svg).toMatch(new RegExp(`data-pitch="${n}"[^]*?>${n}</text>`));
+  });
+
+  it('marks a swing and miss as a ring and a foul as a dashed ring (PRD §3.2.4)', () => {
+    const seq: PitchMark[] = [
+      { n: 1, call: 'ball', callCode: 'B', x: 0.9, z: 2 },
+      { n: 2, call: 'calledStrike', callCode: 'C', x: 0, z: 2.5 },
+      { n: 3, call: 'swingingStrike', callCode: 'S', x: 0.3, z: 1.2 },
+      { n: 4, call: 'foul', callCode: 'F', x: -0.4, z: 3 },
+      { n: 5, call: 'inPlay', callCode: 'X', x: 0.1, z: 2.2 },
+    ];
+    const svg = zoneSvg(seq, { w: 118, h: 150, iso: false, theme, popLast: false, noData: '' });
+    expect([...svg.matchAll(/data-mark="(\w+)"/g)].map((m) => m[1])).toEqual(['solid', 'solid', 'ring', 'dashed', 'solid']);
+    const dashedDot = /data-mark="dashed"[^]*?<\/g><\/g>/.exec(svg)![0];
+    expect(dashedDot).toContain('stroke-dasharray');
+    expect(/data-mark="ring"[^]*?<\/g><\/g>/.exec(svg)![0]).not.toContain('stroke-dasharray');
+  });
+
+  it('balls are drawn near real size, so the centre reads as the location', () => {
+    const svg = zoneSvg([{ n: 1, call: 'ball', callCode: 'B', x: 0, z: 2.5 }], { w: 118, h: 150, iso: false, theme, popLast: false, noData: '' });
+    const r = Number(new RegExp(`<circle r="([\\d.]+)" fill="${theme.ball}"`).exec(svg)![1]);
+    const plate = Number(/<rect x="[\d.]+" y="[\d.]+" width="([\d.]+)" height="3"/.exec(svg)![1]); // 17 in wide
+    const ballOverPlate = (2 * r) / plate;
+    expect(ballOverPlate).toBeGreaterThan((2.9 / 17) * 1.1);
+    expect(ballOverPlate).toBeLessThan((2.9 / 17) * 1.35);
+  });
+
+  it('keeps a wild pitch on the panel, at its edge', () => {
+    const svg = zoneSvg([{ n: 1, call: 'ball', callCode: 'B', x: 4, z: -1 }], { w: 118, h: 150, iso: false, theme, popLast: false, noData: '' });
+    const [, x, y] = /translate\(([\d.]+),([\d.]+)\)/.exec(svg)!;
+    expect(Number(x)).toBeLessThan(118);
+    expect(Number(y)).toBeLessThan(150);
   });
 
   it('says so when a game has no pitch locations', () => {

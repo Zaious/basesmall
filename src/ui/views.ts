@@ -2,10 +2,10 @@
 // builders: state in, HTML out. The board itself is drawn by src/render/.
 
 import type { Base, GameState, Side } from '../model/types.ts';
-import { pitchLine, STRINGS, type Lang } from '../i18n/index.ts';
+import { callWord, pitchLine, STRINGS, type Lang } from '../i18n/index.ts';
 import type { StyleManifest } from '../styles/manifest.ts';
 import { cssFill, svgFill, type Paint } from '../styles/team-colors.ts';
-import { pitchColour } from '../render/zone.ts';
+import { pitchMark } from '../render/zone.ts';
 import type { TierParts } from '../render/tiers.ts';
 
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -68,12 +68,18 @@ export function hudView(s: GameState, paints: Record<Side, Paint>, lang: Lang): 
       <div class="cap pit"><span class="muted">${esc(S.ui.pitcher)}</span><b>${esc(s.pitcher?.short ?? '')}</b><span class="mono muted">${s.pitcher?.pitches ?? ''}</span></div>`;
 }
 
-/** Under the strike zone: the newest pitch, or the batter before the first one. */
+/** Under the strike zone: the newest pitch ("6 In play · Cutter 89"), or the batter before the first one. */
 export function pitchCaption(s: GameState, lang: Lang, theme: StyleManifest['theme']): string {
   const p = s.atBat.at(-1);
   if (!p) return `<span class="muted">${esc(s.batter?.short ?? '')}</span>`;
   const [what] = pitchLine({ ...p, call: 'other' }, lang).split(' · ');
-  return `<span class="n" style="background:${pitchColour(p.call, theme)}">${p.n}</span><span class="what">${esc(what ?? '')}</span>`;
+  const m = pitchMark(p.call, theme);
+  // The badge is drawn like the dot in the zone: solid, ring or dashed ring.
+  const badge = m.kind === 'solid'
+    ? `background:${m.colour}`
+    : `background:transparent;color:${m.colour};box-shadow:none;border:1.4px ${m.kind === 'dashed' ? 'dashed' : 'solid'} ${m.colour}`;
+  const call = callWord(p.call, lang);
+  return `<span class="n" style="${badge}">${p.n}</span><span class="what">${esc([call, what].filter(Boolean).join(' · '))}</span>`;
 }
 
 /** Full tier: pitcher and batter side by side. */

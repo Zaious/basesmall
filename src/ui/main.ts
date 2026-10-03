@@ -829,7 +829,8 @@ function renderZone(s: GameState, pop: boolean): void {
   const r = svg.getBoundingClientRect();
   svg.innerHTML = zoneSvg(s.atBat, {
     w: r.width, h: r.height, iso: style.renderer === 'iso', theme: style.theme,
-    batterSide: s.batter?.side, popLast: pop, noData: S.ui.noPitchData,
+    batter: s.batter ? { side: s.batter.side, label: S.bats(s.batter.side) } : undefined,
+    popLast: pop, noData: S.ui.noPitchData,
   });
   const cap = app.querySelector('.pcap');
   if (cap) cap.innerHTML = pitchCaption(s, lang, style.theme);
