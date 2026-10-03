@@ -20,7 +20,7 @@ From the [latest release](https://github.com/Zaious/basesmall/releases/latest):
 | --- | --- | --- |
 | Windows, installer | `Basesmall_x.y.z_x64-setup.exe` | Installs for your user only: no administrator rights. |
 | Windows, portable | `Basesmall_x.y.z_x64_portable.zip` | Nothing to install. Unzip anywhere and run `Basesmall.exe`. For PCs where installing is locked. |
-| macOS (experimental) | `Basesmall_x.y.z_universal.dmg` | Not notarized by Apple, so macOS refuses it the first time: open System Settings, Privacy & Security, and click **Open Anyway**. |
+| macOS (experimental) | `Basesmall_x.y.z_universal.dmg` | Signed and notarized by Apple. Drag it into Applications. One download for Intel and Apple Silicon. |
 | Linux (experimental) | `.AppImage` or `.deb` | Make the AppImage executable, then run it. |
 
 **"Windows protected your PC"?** Basesmall is not code-signed yet, so Windows does not recognise it. Click **More info**, then **Run anyway**. For a downloaded portable copy you can also right-click `Basesmall.exe`, open **Properties** and tick **Unblock**.

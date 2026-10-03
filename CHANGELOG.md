@@ -14,4 +14,4 @@ The first release.
 - Optional strike zone, bases, matchup and line score windows.
 - Catch up on a game joined late.
 - English and Traditional Chinese.
-- Windows installer (per user, no administrator rights) and a portable zip. macOS and Linux builds are experimental.
+- Windows installer (per user, no administrator rights) and a portable zip. macOS and Linux builds are experimental; the macOS build is signed and notarized by Apple.

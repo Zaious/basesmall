@@ -71,7 +71,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Basesmall ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md. macOS and Linux builds are experimental and unsigned.
+          releaseBody: See CHANGELOG.md. Windows builds are not code-signed; the macOS build is signed and notarized when the maintainer's secrets are set. macOS and Linux are experimental.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json
