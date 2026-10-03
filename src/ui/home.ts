@@ -54,7 +54,7 @@ export function homeView(d: Decision, ctx: HomeContext): string {
     case 'today': case 'next': {
       const g = d.game;
       const when = d.kind === 'today'
-        ? F.firstPitch(timeOf(g.start, ctx.lang), S.duration(g.start - ctx.now))
+        ? (g.start - ctx.now < 60_000 ? F.firstPitchDue(timeOf(g.start, ctx.lang)) : F.firstPitch(timeOf(g.start, ctx.lang), S.duration(g.start - ctx.now)))
         : F.next(`${dayOf(g.start, ctx.lang)} ${timeOf(g.start, ctx.lang)}`);
       const starters = g.away.probable || g.home.probable ? `<div class="hrow muted">${esc(F.starters(g.away.probable ?? '?', g.home.probable ?? '?'))}</div>` : '';
       return `<section class="home">${head(`<span class="teams">${matchup(g)}</span>${seriesLine(g, ctx.lang)}`)}

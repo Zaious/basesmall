@@ -87,6 +87,8 @@ interface Strings {
   /** Following the user's team, the scoreboard and the M5 modes. */
   follow: {
     firstPitch(time: string, wait: string): string;
+    /** The start time has come and the game is not on yet. */
+    firstPitchDue(time: string): string;
     next(when: string): string;
     starters(away: string, home: string): string;
     over: Record<'eliminated' | 'missed' | 'champion' | 'advanced', (team: string) => string>;
@@ -217,6 +219,7 @@ const zh: Strings = {
   },
   follow: {
     firstPitch: (time, wait) => `${time} 開賽 · 還有 ${wait}`,
+    firstPitchDue: (time) => `${time} 開賽 · 即將開打`,
     next: (when) => `下一場 ${when}`,
     starters: (a, h) => `先發 ${a} vs ${h}`,
     over: {
@@ -352,6 +355,7 @@ const en: Strings = {
   },
   follow: {
     firstPitch: (time, wait) => `First pitch ${time} · in ${wait}`,
+    firstPitchDue: (time) => `First pitch ${time} · any moment now`,
     next: (when) => `Next: ${when}`,
     starters: (a, h) => `Starters ${a} vs ${h}`,
     over: {

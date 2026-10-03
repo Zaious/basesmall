@@ -362,9 +362,10 @@ function stopHome(): void {
 /**
  * What the user's team is up to: follow it if it is playing, else the home card (countdown, next
  * game, or the season-over choices). Only called when nothing is being followed, or when the game on
- * screen has ended: it never switches games mid-game (ARCHITECTURE 4.2.1).
+ * screen has ended: it never switches games mid-game (ARCHITECTURE 4.2.1). `fresh` reads the team's
+ * schedule past its five-minute cache, for the minutes around a first pitch.
  */
-async function goHome(): Promise<void> {
+async function goHome(fresh = false): Promise<void> {
   const team = homeTeam();
   if (!team) { await tensionHome(); return; }
   if (view !== 'home') {
@@ -379,7 +380,7 @@ async function goHome(): Promise<void> {
   try {
     const id = teamId(team);
     if (id === undefined) { void showPicker(); return; }
-    const cards = await schedule.team(id);
+    const cards = await schedule.team(id, fresh);
     remember(cards);
     d = decide(id, cards, easternToday());
   } catch {
@@ -411,9 +412,13 @@ function armHome(ms: number): void {
     if (view !== 'home') { stopHome(); return; }
     ticks++;
     const d = homeDecision;
-    const near = d && (d.kind === 'today') && d.game.start - Date.now() < 10 * 60_000;
+    // From ten minutes before the first pitch to an hour after it (late starts, rain), every minute
+    // and past the team cache. With the cache the switch to the live game came 4 minutes after the
+    // first pitch, after the start notice (measured 2026-10-04, NYY@TB).
+    const toStart = d?.kind === 'today' ? d.game.start - Date.now() : Infinity;
+    const near = toStart < 10 * 60_000 && toStart > -60 * 60_000;
     if (homeIdle) return; // the schedule subscription handles the idle (most tense) case
-    if (near || ticks % 5 === 0) void goHome(); else renderHome(false);
+    if (near) void goHome(true); else if (ticks % 5 === 0) void goHome(); else renderHome(false);
   }, ms);
 }
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { cardsOf, type GameCard, type MlbSchedule } from '../src/data/mlb/schedule.ts';
 import { decide } from '../src/follow/decide.ts';
 import { isBigMoment, mostTense, tension } from '../src/follow/tension.ts';
+import { homeView } from '../src/ui/home.ts';
 
 const fx = (name: string) => `fixtures/mlb/${name}.json`;
 const has = (name: string) => existsSync(fx(name));
@@ -77,6 +78,20 @@ describe('tension', () => {
     expect(mostTense([a, b], 2)?.gamePk).toBe(1);
     expect(isBigMoment(b)).toBe(true);
     expect(isBigMoment(a)).toBe(false);
+  });
+});
+
+describe('the home card before the first pitch', () => {
+  const g = card({ gamePk: 1, start: Date.parse('2026-10-03T22:30:00Z') });
+  const at = (iso: string, lang: 'en' | 'zh-Hant' = 'en') => homeView({ kind: 'today', game: g }, { lang, team: 'T10', now: Date.parse(iso) });
+  it('counts down until the start time', () => {
+    expect(at('2026-10-03T22:00:00Z')).toContain(' · in ');
+  });
+  it('stops counting once the start time has come and the game is not on yet', () => {
+    // It used to read "in 0 min" for the minutes between the scheduled time and the first pitch.
+    expect(at('2026-10-03T22:30:20Z')).toContain('any moment now');
+    expect(at('2026-10-03T22:38:00Z', 'zh-Hant')).toContain('即將開打');
+    expect(at('2026-10-03T22:38:00Z', 'zh-Hant')).not.toContain('還有');
   });
 });
 
