@@ -220,23 +220,46 @@ const tabOn = { clock: load('tab-clock') !== 'off', replay: load('tab-replay') !
 const tabsEl = document.getElementById('tabs')!;
 
 /** How long the game has been going, h:mm. Live: until now. Replay: until the moment shown. Final: official length. */
-function elapsed(s: GameState): string {
-  const minutes = s.status === 'final' && s.durationMinutes ? s.durationMinutes
-    : s.startedAt === undefined ? undefined
-    : ((mode === 'live' && s.status !== 'final' ? Date.now() : s.at ?? Date.now()) - s.startedAt) / 60_000;
-  if (minutes === undefined || minutes < 0) return '';
-  const m = Math.floor(minutes);
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+// When the shown state arrived, and when the next one is due in game time (replay only),
+// so the clock can keep ticking between events instead of jumping every 20 s.
+let deliveredAt = 0;
+let nextEventAt: number | undefined;
+/** Real time already run since the state arrived, frozen while a replay is paused. */
+let frozenOffset: number | null = null;
+
+/** The moment the clock should show, in game time. */
+function clockNow(s: GameState): number | undefined {
+  if (mode === 'live') return Date.now();
+  if (s.at === undefined) return undefined;
+  const t = s.at + (frozenOffset ?? performance.now() - deliveredAt) * speed;
+  return nextEventAt === undefined ? t : Math.min(t, nextEventAt);
 }
-// Live clocks move between updates too.
-setInterval(() => { if (view === 'game' && mode === 'live' && tabOn.clock && store.current?.status === 'live') renderBar(store.current); }, 30_000);
+
+/** How long the game has been going: m:ss, then h:mm:ss. A finished game shows its official length. */
+function elapsed(s: GameState): string {
+  if (s.status === 'final' && s.durationMinutes) {
+    return `${Math.floor(s.durationMinutes / 60)}:${String(s.durationMinutes % 60).padStart(2, '0')}`;
+  }
+  const now = s.startedAt === undefined ? undefined : clockNow(s);
+  if (now === undefined || s.startedAt === undefined || now < s.startedAt) return '';
+  const sec = Math.floor((now - s.startedAt) / 1000);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = String(sec % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
+// Tick once a second, touching only the clock's digits.
+setInterval(() => {
+  if (view !== 'game' || !tabOn.clock || !store.current) return;
+  const el = tabsEl.querySelector('.clock-value');
+  if (el) el.textContent = elapsed(store.current);
+}, 1000);
 
 function renderTabs(s: GameState | undefined): void {
   const items: string[] = [];
   const game = view === 'game';
   if (game && s) {
     const time = elapsed(s);
-    if (tabOn.clock && time) items.push(`<span class="tab" title="${esc(S.ui.clock)}">⏱ <span class="mono">${time}</span><button data-close="clock" aria-label="×">×</button></span>`);
+    if (tabOn.clock && time) items.push(`<span class="tab" title="${esc(S.ui.clock)}">⏱ <span class="mono clock-value">${time}</span><button data-close="clock" aria-label="×">×</button></span>`);
     if (tabOn.replay && mode === 'replay') {
       const date = dates.get(s.gamePk);
       items.push(`<span class="tab accent">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}<button data-close="replay" aria-label="×">×</button></span>`);
@@ -281,6 +304,10 @@ store.subscribe({
       p.seek(index);
       return;
     }
+    deliveredAt = performance.now();
+    const rp = mode === 'replay' ? replay.player(following) : undefined;
+    nextEventAt = rp ? rp.timeline[rp.position + 1]?.t : undefined;
+    frozenOffset = rp && !rp.playing ? 0 : null;
     renderBar(s);
   },
   onEvent: (ev) => {
@@ -342,7 +369,10 @@ function replayAction(action: string): void {
   if (action === 'replay-tab') { setTab('replay', !tabOn.replay); return; }
   const p = replay.player(following);
   if (!p) return;
-  if (action === 'toggle') { if (p.playing) p.pause(); else p.play(); }
+  if (action === 'toggle') {
+    if (p.playing) { frozenOffset = performance.now() - deliveredAt; p.pause(); }
+    else { deliveredAt = performance.now() - (frozenOffset ?? 0); frozenOffset = null; p.play(); }
+  }
   else if (action === 'speed') { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]!; p.setSpeed(speed); }
   else if (action === 'next') {
     const i = p.timeline.findIndex((e, n) => n > p.position && e.events.some((ev) => ev.type === 'plateAppearance' || ev.type === 'gameEnd'));
