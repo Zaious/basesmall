@@ -124,13 +124,30 @@ export interface MlbFeed {
   gameData: {
     status: { abstractGameState?: string; detailedState?: string; codedGameState?: string };
     teams: { away: MlbTeam; home: MlbTeam };
-    players?: Record<string, { id: number; fullName?: string; lastName?: string; boxscoreName?: string }>;
+    players?: Record<string, {
+      id: number; fullName?: string; lastName?: string; boxscoreName?: string;
+      primaryPosition?: { abbreviation?: string }; batSide?: { code?: string }; pitchHand?: { code?: string };
+    }>;
+    /** R regular season; F, D, L, W the postseason rounds; S spring training. */
+    game?: { type?: string };
     datetime?: { officialDate?: string };
     /** firstPitch is set once the game starts; gameDurationMinutes once it ends (delays excluded). */
     gameInfo?: { firstPitch?: string; gameDurationMinutes?: number };
   };
   liveData: {
     plays: { allPlays: MlbPlay[] };
+    /** Only the parts the hover card reads. seasonStats are postseason totals in October. */
+    boxscore?: {
+      teams?: Record<'away' | 'home', {
+        players?: Record<string, {
+          position?: { abbreviation?: string };
+          seasonStats?: {
+            batting?: { avg?: string; homeRuns?: number; rbi?: number; ops?: string; atBats?: number };
+            pitching?: { era?: string; inningsPitched?: string; strikeOuts?: number; wins?: number; losses?: number; gamesPlayed?: number };
+          };
+        }>;
+      }>;
+    };
     linescore?: {
       scheduledInnings?: number;
       teams?: Record<'away' | 'home', { runs?: number; hits?: number; errors?: number }>;

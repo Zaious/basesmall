@@ -34,6 +34,7 @@ export const NON_PITCH_CODES: ReadonlySet<string> = new Set([
 // ---------- event types ----------
 
 export const HIT_EVENTS: ReadonlySet<string> = new Set(['single', 'double', 'triple', 'home_run']);
+export const STRIKEOUT_EVENTS: ReadonlySet<string> = new Set(['strikeout', 'strike_out', 'strikeout_double_play', 'strikeout_triple_play']);
 
 /** Plate-appearance results charged as an official at-bat. */
 export const AT_BAT_EVENTS: ReadonlySet<string> = new Set([

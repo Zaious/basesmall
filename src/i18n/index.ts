@@ -2,7 +2,7 @@
 // structured events (never from MLB's English description), so both languages read naturally.
 // Player names are not translated.
 
-import type { GameEvent, GameStatus, Half, Hand, PitchMark, Side } from '../model/types.ts';
+import type { BatLine, GameEvent, GameStatus, Half, Hand, PitchLine, PitchMark, PlayerCard, Side } from '../model/types.ts';
 import type { Series } from '../data/mlb/schedule.ts';
 import type { Tier } from '../render/tiers.ts';
 import type { NotifyKind } from '../settings/schema.ts';
@@ -66,6 +66,15 @@ interface Strings {
   automaticStrike: string;
   /** "Right-handed batter" in a few characters. */
   bats(h: Hand): string;
+  /** The hover card over a piece. */
+  card: {
+    pos(abbr: string): string;
+    hand(card: PlayerCard, pitcher: boolean): string;
+    bat(l: BatLine | undefined): string;
+    pitch(l: PitchLine | undefined): string;
+    batTotals(t: NonNullable<PlayerCard['totals']>): string;
+    pitchTotals(t: NonNullable<PlayerCard['totals']>): string;
+  };
   throws(h: Hand): string;
   feet(n: number): string;
   /** Size tiers of the main window. */
@@ -111,6 +120,7 @@ interface Strings {
     background: string; bg: Record<'solid' | 'semi' | 'clear', string>;
     language: string; auto: string;
     tabs: string;
+    hoverCard: string;
     sound: string; soundOn: string; volume: string; hit: string; homeRun: string; preview: string; soundBlocked: string;
     notify: string; mode: string; modes: Record<'toast' | 'marquee' | 'both' | 'off', string>;
     spot: string; spots: Record<'top' | 'bottom' | 'bar', string>;
@@ -127,7 +137,7 @@ interface Strings {
     newVersion(tag: string): string;
   };
   ui: Record<
-    'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' |
+    'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' | 'quit' | 'quitAgain' |
     'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed' |
     'play' | 'pause' | 'speed' | 'nextResult' | 'chooseTeam' | 'chooseTeamHint' | 'noFavorite' | 'favorite' | 'clock' |
     'size' | 'style' | 'pitcher' | 'batter' | 'todayLine' | 'noPitchData',
@@ -206,6 +216,16 @@ const zh: Strings = {
   automaticBall: '自動壞球',
   automaticStrike: '自動好球',
   bats: (h) => (h === 'L' ? '左打' : '右打'),
+  card: {
+    pos: (a) => ({ P: '投手', C: '捕手', '1B': '一壘手', '2B': '二壘手', '3B': '三壘手', SS: '游擊手', LF: '左外野手', CF: '中外野手', RF: '右外野手', DH: '指定打擊', PH: '代打', PR: '代跑', TWP: '投打二刀流' } as Record<string, string>)[a] ?? a,
+    hand: (c, pitcher) => (pitcher ? (c.throws === 'L' ? '左投' : c.throws === 'R' ? '右投' : '') : c.bats === 'S' ? '左右開弓' : c.bats === 'L' ? '左打' : c.bats === 'R' ? '右打' : ''),
+    bat: (l) => (!l || l.pa === 0 ? '今日還沒打擊'
+      : [`今日 ${l.ab} 打數 ${l.h} 安打`, l.hr && `${l.hr} 全壘打`, l.rbi && `${l.rbi} 打點`, l.bb && `${l.bb} 保送`, l.k && `${l.k} 三振`].filter(Boolean).join(' · ')),
+    pitch: (l) => (!l || l.pitches === 0 ? '今日還沒投球'
+      : [`今日 ${l.pitches} 球`, `${Math.floor(l.outs / 3)}.${l.outs % 3} 局`, `${l.k} 三振`, l.bb && `${l.bb} 保送`, `${l.h} 安打`].filter((x) => x !== 0 && x !== '').join(' · ')),
+    batTotals: (t) => `${t.kind === 'season' ? '本季' : '季後賽'} ` + [t.batting?.avg && `打擊率 ${t.batting.avg}`, t.batting?.hr !== undefined && `${t.batting.hr} 全壘打`, t.batting?.rbi !== undefined && `${t.batting.rbi} 打點`, t.batting?.ops && `OPS ${t.batting.ops}`].filter(Boolean).join(' · '),
+    pitchTotals: (t) => `${t.kind === 'season' ? '本季' : '季後賽'} ` + [t.pitching?.era && `防禦率 ${t.pitching.era}`, t.pitching?.ip && `${t.pitching.ip} 局`, t.pitching?.k !== undefined && `${t.pitching.k} 三振`, t.pitching?.w !== undefined && `${t.pitching.w} 勝 ${t.pitching.l ?? 0} 敗`].filter(Boolean).join(' · '),
+  },
   throws: (h) => (h === 'L' ? '左投' : '右投'),
   feet: (n) => `${n} 呎`,
   tier: { dot: '點', bar: '條', field: '場', full: '全' },
@@ -257,6 +277,7 @@ const zh: Strings = {
     background: '背景', bg: { solid: '實底', semi: '半透明', clear: '全透明' },
     language: '語言', auto: '跟隨系統',
     tabs: '頁籤',
+    hoverCard: '滑鼠移到棋子上顯示球員資料',
     sound: '音效', soundOn: '開啟音效', volume: '音量', hit: '安打', homeRun: '全壘打', preview: '試聽',
     soundBlocked: '系統還不讓這個視窗發聲，點一下視窗任何地方就好',
     notify: '通知', mode: '方式', modes: { toast: '右下角', marquee: '跑馬燈', both: '兩者', off: '關閉' },
@@ -276,6 +297,7 @@ const zh: Strings = {
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
     reconnecting: '連線中斷，重試中', replay: '重播', back: '回清單', pickGame: '選一場比賽',
+    quit: '結束 Basesmall', quitAgain: '再按一次結束',
     scoresHidden: '不顯示比分', prevDay: '前一天', nextDay: '後一天', loadFailed: '讀不到賽程，稍後重試',
     play: '播放', pause: '暫停', speed: '速度', nextResult: '下一個結果',
     chooseTeam: '你的主隊是？', chooseTeamHint: '主隊的比賽會排在最前面，撞色時主隊保留原色。之後可以改。',
@@ -349,6 +371,16 @@ const en: Strings = {
   automaticBall: 'Automatic ball',
   automaticStrike: 'Automatic strike',
   bats: (h) => (h === 'L' ? 'LHB' : 'RHB'),
+  card: {
+    pos: (a) => a,
+    hand: (c, pitcher) => (pitcher ? (c.throws === 'L' ? 'throws L' : c.throws === 'R' ? 'throws R' : '') : c.bats === 'S' ? 'switch hitter' : c.bats === 'L' ? 'bats L' : c.bats === 'R' ? 'bats R' : ''),
+    bat: (l) => (!l || l.pa === 0 ? 'No plate appearance yet today'
+      : [`Today ${l.h}-for-${l.ab}`, l.hr && `${l.hr} HR`, l.rbi && `${l.rbi} RBI`, l.bb && `${l.bb} BB`, l.k && `${l.k} K`].filter(Boolean).join(' · ')),
+    pitch: (l) => (!l || l.pitches === 0 ? 'No pitches yet today'
+      : [`Today ${l.pitches} pitches`, `${Math.floor(l.outs / 3)}.${l.outs % 3} IP`, `${l.k} K`, l.bb && `${l.bb} BB`, `${l.h} H`].filter((x) => x !== 0 && x !== '').join(' · ')),
+    batTotals: (t) => `${t.kind === 'season' ? 'Season' : 'Postseason'} ` + [t.batting?.avg, t.batting?.hr !== undefined && `${t.batting.hr} HR`, t.batting?.rbi !== undefined && `${t.batting.rbi} RBI`, t.batting?.ops && `${t.batting.ops} OPS`].filter(Boolean).join(' · '),
+    pitchTotals: (t) => `${t.kind === 'season' ? 'Season' : 'Postseason'} ` + [t.pitching?.era && `${t.pitching.era} ERA`, t.pitching?.ip && `${t.pitching.ip} IP`, t.pitching?.k !== undefined && `${t.pitching.k} K`, t.pitching?.w !== undefined && `${t.pitching.w}-${t.pitching.l ?? 0}`].filter(Boolean).join(' · '),
+  },
   throws: (h) => (h === 'L' ? 'LHP' : 'RHP'),
   feet: (n) => `${n} ft`,
   tier: { dot: 'Dot', bar: 'Bar', field: 'Field', full: 'Full' },
@@ -398,6 +430,7 @@ const en: Strings = {
     background: 'Background', bg: { solid: 'Solid', semi: 'Translucent', clear: 'Clear' },
     language: 'Language', auto: 'System',
     tabs: 'Tabs',
+    hoverCard: 'Player card on hover',
     sound: 'Sound', soundOn: 'Sound on', volume: 'Volume', hit: 'Hit', homeRun: 'Home run', preview: 'Play',
     soundBlocked: 'The system wants a click before this window makes sound: click anywhere in it',
     notify: 'Notifications', mode: 'Show as', modes: { toast: 'Corner', marquee: 'Ticker', both: 'Both', off: 'Off' },
@@ -417,6 +450,7 @@ const en: Strings = {
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',
     reconnecting: 'Connection lost, retrying', replay: 'Replay', back: 'Back', pickGame: 'Pick a game',
+    quit: 'Quit Basesmall', quitAgain: 'Click again to quit',
     scoresHidden: 'Scores hidden', prevDay: 'Previous day', nextDay: 'Next day', loadFailed: "Couldn't load the schedule, retrying",
     play: 'Play', pause: 'Pause', speed: 'Speed', nextResult: 'Next result',
     chooseTeam: 'Which team is yours?', chooseTeamHint: 'Its games come first, and it keeps its colour when two teams clash. You can change this later.',

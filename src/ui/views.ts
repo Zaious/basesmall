@@ -96,6 +96,21 @@ export function pitchCaption(s: GameState, lang: Lang, theme: StyleManifest['the
 }
 
 /** Full tier: pitcher and batter side by side. */
+/**
+ * The card over a piece: name, position and hand, today's line as of this moment, and (live only)
+ * the league's running totals. A replay leaves the totals out: they already include how the game ends.
+ */
+export function playerCardView(id: number, pitcher: boolean, fallbackName: string, s: GameState, totals: boolean, lang: Lang): string {
+  const C = STRINGS[lang].card;
+  const card = s.roster?.[id] ?? {};
+  const meta = [card.pos ? C.pos(card.pos) : '', C.hand(card, pitcher)].filter(Boolean).join(' · ');
+  const today = pitcher ? C.pitch(s.pitchLines?.[id]) : C.bat(s.batLines?.[id]);
+  const t = card.totals;
+  const season = totals && t ? (pitcher ? (t.pitching ? C.pitchTotals(t) : '') : (t.batting ? C.batTotals(t) : '')) : '';
+  return `<div><b>${esc(card.name ?? fallbackName)}</b>${meta ? ` <span class="muted">${esc(meta)}</span>` : ''}</div>`
+    + `<div>${esc(today)}</div>${season ? `<div class="muted">${esc(season)}</div>` : ''}`;
+}
+
 export function matchupView(s: GameState, lang: Lang): string {
   const S = STRINGS[lang];
   const pit = s.pitcher, bat = s.batter;

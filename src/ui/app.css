@@ -32,6 +32,8 @@ body { color: var(--text); font: 13px/1.35 var(--font); user-select: none; -webk
 .lamp { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 30%, transparent); }
 .lamp.b { background: var(--ball); } .lamp.s { background: var(--strike); } .lamp.o { background: var(--out); }
 button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; }
+/* The quit button asks once: "Click again to quit" in the strike colour for three seconds. */
+button.quit.armed, #tabs .controls button.quit.armed { color: var(--strike); white-space: nowrap; }
 .conn { width: 7px; height: 7px; border-radius: 50%; background: var(--strike); flex: 0 0 7px; }
 .status { color: var(--accent); }
 .diamond { flex: 0 0 auto; }
@@ -62,6 +64,11 @@ button { font: inherit; color: inherit; border: 0; background: transparent; curs
 .hud .pit b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
 .fieldwrap { position: relative; flex: 1 1 auto; min-width: 0; }
 .fieldwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+/* The player card over a piece; it never takes the pointer, so moving off the piece hides it. */
+.pcard { position: absolute; z-index: 3; max-width: calc(100% - 4px); padding: 5px 8px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35); font-size: 11px; line-height: 1.45; color: var(--text); pointer-events: none; width: max-content; }
+.pcard .muted { color: var(--muted); }
+.pcard[hidden] { display: none; }
 /* min-width: 0, or a long pitch caption widens the column, shifts the board and redraws the zone. */
 .zonewrap { flex: 0 0 118px; display: flex; flex-direction: column; gap: 5px; min-height: 0; min-width: 0; }
 .zonewrap svg { flex: 1 1 auto; width: 100%; min-height: 0; border-radius: 8px; }
@@ -185,7 +192,7 @@ body.has-board #app { bottom: 154px; }
 .settings { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .settings header { display: flex; align-items: center; gap: 6px; padding: 9px 12px 6px; }
 .settings .done { height: 24px; padding: 0 12px; border-radius: 12px; background: var(--border); color: var(--text); }
-.settings .body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; user-select: text; -webkit-user-select: text; }
+.settings .body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; user-select: text; -webkit-user-select: text; }
 /* A scrolling column: rows keep their height instead of shrinking into each other. */
 .settings .body > * { flex-shrink: 0; }
 .settings h3 { margin: 10px 0 0; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
@@ -207,7 +214,8 @@ body.has-board #app { bottom: 154px; }
 .settings input[type='range'] { flex: 1; min-width: 90px; accent-color: var(--accent); }
 .settings .note, .settings .about { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.5; }
 .settings .about b { color: var(--text); }
-.settings .note .mono { user-select: all; -webkit-user-select: all; }
+/* A folder path has no spaces to break at; unbroken it widened the page into a sideways scroll. */
+.settings .note .mono { user-select: all; -webkit-user-select: all; overflow-wrap: anywhere; word-break: break-all; }
 .settings .chip { display: inline-flex; align-items: center; gap: 2px; }
 .settings input.key { flex: 1; min-width: 160px; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: 12px var(--mono); }
 .settings .keyhint { color: var(--muted); font: 12px var(--mono); }

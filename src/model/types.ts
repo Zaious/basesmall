@@ -113,6 +113,30 @@ export interface PitcherState extends PlayerRef {
   pitches: number;
 }
 
+/** A batter's line in this game up to this moment, from the timeline (never the final box score). */
+export interface BatLine { pa: number; ab: number; h: number; hr: number; rbi: number; bb: number; k: number }
+/** A pitcher's line in this game up to this moment. `outs` / 3 is innings pitched. */
+export interface PitchLine { pitches: number; outs: number; h: number; bb: number; k: number }
+
+/** What the hover card says about a player, apart from today's lines. One per game, shared by every step. */
+export interface PlayerCard {
+  name?: string;
+  /** Position in this game, e.g. "C", "RF", "DH", "P". */
+  pos?: string;
+  /** S: switch hitter. */
+  bats?: Hand | 'S';
+  throws?: Hand;
+  /**
+   * The league's running totals: the regular season, or in October the postseason. They include this
+   * game as far as it has gone, the whole game once it is over: the UI must not show them in a replay.
+   */
+  totals?: {
+    kind: 'season' | 'postseason';
+    batting?: { avg?: string; hr?: number; rbi?: number; ops?: string; ab?: number };
+    pitching?: { era?: string; ip?: string; k?: number; w?: number; l?: number };
+  };
+}
+
 export interface GameState {
   gamePk: number;
   status: GameStatus;
@@ -141,6 +165,11 @@ export interface GameState {
   at?: number;
   /** Official length of a finished game, delays excluded. */
   durationMinutes?: number;
+  /** Player cards by id, for the hover card. The same object in every step of a game. */
+  roster?: Readonly<Record<number, PlayerCard>>;
+  /** Today's batting and pitching lines by player id, as of this step. */
+  batLines?: Readonly<Record<number, BatLine>>;
+  pitchLines?: Readonly<Record<number, PitchLine>>;
 }
 
 /**

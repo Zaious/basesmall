@@ -49,6 +49,8 @@ export interface Settings {
   };
   /** The scoreboard drawer under the window is open. */
   scoreboard: boolean;
+  /** A card with the player's lines when the pointer rests on a piece. */
+  hoverCard: boolean;
   /** Low-key mode: a plain, colourless status strip; no notices or sounds. */
   lowKey: boolean;
   hotkeys: { on: boolean; hide: string; lowKey: string };
@@ -76,6 +78,7 @@ export const DEFAULTS: Settings = {
   replay: { pace: 'compact', showScores: false },
   follow: { after: 'manual', adopted: null, seen: '' },
   scoreboard: false,
+  hoverCard: true,
   lowKey: false,
   // Three modifiers: two-modifier combinations are often taken (Ctrl+Alt+L reformats code in some editors).
   hotkeys: { on: true, hide: 'CmdOrCtrl+Alt+Shift+B', lowKey: 'CmdOrCtrl+Alt+Shift+L' },
@@ -145,6 +148,7 @@ export function normalize(raw: unknown): Settings {
       seen: typeof follow.seen === 'string' && /^(\d{4}:[A-Z]{2,3})?$/.test(follow.seen) ? follow.seen : '',
     },
     scoreboard: bool(o.scoreboard, d.scoreboard),
+    hoverCard: bool(o.hoverCard, d.hoverCard),
     lowKey: bool(o.lowKey, d.lowKey),
     hotkeys: { on: bool(hotkeys.on, d.hotkeys.on), hide: combo(hotkeys.hide, d.hotkeys.hide), lowKey: combo(hotkeys.lowKey, d.hotkeys.lowKey) },
     panels: Object.fromEntries(PANELS.map((p) => [p, bool(panels[p], false)])) as Record<PanelName, boolean>,

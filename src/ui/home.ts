@@ -19,6 +19,8 @@ export interface HomeContext {
   openingIn?: number;
   /** League mode or "most tense": nothing live right now. */
   idle?: boolean;
+  /** Extra buttons for the corner after settings (the quit button, from main.ts). */
+  corner?: string;
 }
 
 const dot = (abbr: string) => `<i class="dot" style="background:${cssFill(teamPaint(abbr))}"></i>`;
@@ -46,7 +48,7 @@ function actions(lang: Lang, last?: GameCard): string {
 
 export function homeView(d: Decision, ctx: HomeContext): string {
   const S = STRINGS[ctx.lang], F = S.follow;
-  const head = (inner: string) => `<div class="hrow top">${inner}<span class="grow"></span><button data-action="settings" title="${esc(S.set.title)}">⚙</button></div>`;
+  const head = (inner: string) => `<div class="hrow top">${inner}<span class="grow"></span><button data-action="settings" title="${esc(S.set.title)}">⚙</button>${ctx.corner ?? ''}</div>`;
   if (ctx.idle) {
     return `<section class="home">${head(`<b>${esc(F.noLiveGames)}</b>`)}${actions(ctx.lang)}</section>`;
   }

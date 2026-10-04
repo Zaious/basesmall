@@ -42,7 +42,7 @@ import { planStep, sceneOf, type Plan, type Scene } from '../render/scene.ts';
 import { nextTier, partsOf, tierOf, TIER_MIN_WIDTH, TIER_PRESET, type Tier, type TierParts } from '../render/tiers.ts';
 import { frameGaps } from '../render/tween.ts';
 import { zoneSvg } from '../render/zone.ts';
-import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption } from './views.ts';
+import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption, playerCardView } from './views.ts';
 import { adoptView, homeView } from './home.ts';
 import { boardRows } from './scoreboard.ts';
 import { newerRelease } from './version.ts';
@@ -286,7 +286,7 @@ function pickerHeader(): string {
       <span class="grow"></span>
       <button data-day="-1" title="${esc(S.ui.prevDay)}">‹</button><span class="date">${pickerDate}</span>
       <button data-day="1" title="${esc(S.ui.nextDay)}">›</button>
-      <button data-action="settings" title="${esc(S.set.title)}">⚙</button></header>`;
+      <button data-action="settings" title="${esc(S.set.title)}">⚙</button>${quitButton()}</header>`;
 }
 
 async function showPicker(): Promise<void> {
@@ -439,7 +439,7 @@ async function daysToOpening(): Promise<number | undefined> {
 function renderHome(askAfter: boolean): void {
   if (view !== 'home' || !homeDecision) return;
   const team = homeTeam() ?? '';
-  app.innerHTML = homeView(homeDecision, { lang, team, now: Date.now(), askAfter, idle: homeIdle, ...(openingIn !== undefined ? { openingIn } : {}) });
+  app.innerHTML = homeView(homeDecision, { lang, team, now: Date.now(), askAfter, idle: homeIdle, corner: quitButton(), ...(openingIn !== undefined ? { openingIn } : {}) });
   setTitle(`Basesmall · home · ${team} · ${homeIdle ? 'idle' : homeDecision.kind}${homeDecision.kind === 'over' ? ` ${homeDecision.how}` : ''}${askAfter ? ' · ask' : ''}`);
 }
 
@@ -545,6 +545,7 @@ function renderSettings(): void {
         <div class="srow"><span class="k">${esc(T.language)}</span>${seg('language', c.language, [['auto', T.auto], ['zh-Hant', '繁體中文'], ['en', 'English']])}</div>
         <div class="srow"><span class="k">${esc(T.tabs)}</span>${check('tabs.clock', c.tabs.clock, S.ui.clock)}${check('tabs.replay', c.tabs.replay, S.ui.replay)}${check('tabs.series', c.tabs.series, T.seriesTab)}</div>
         <div class="srow">${check('lowKey', c.lowKey, S.follow.lowKey)}${check('scoreboard', c.scoreboard, S.follow.scoreboard)}</div>
+        <div class="srow">${check('hoverCard', c.hoverCard, T.hoverCard)}</div>
 
         <h3>${esc(T.panels)}</h3>
         <div class="srow">${PANELS.map((p) => check(`panels.${p}`, c.panels[p], T.panel[p])).join('')}</div>
@@ -780,6 +781,23 @@ function setTab(k: 'clock' | 'replay' | 'series', on: boolean): void {
   settings.update((d) => { d.tabs[k] = on; });
 }
 
+/**
+ * The ✕ at the end of each view's buttons. A first click asks, a second within three seconds quits:
+ * closing the main window ends the app (lib.rs). Without it, quitting meant finding the tray icon.
+ */
+let quitArmed = 0;
+function quitButton(): string {
+  const armed = Date.now() - quitArmed < 3000;
+  return `<button class="quit${armed ? ' armed' : ''}" data-action="quit" title="${esc(S.ui.quit)}">${armed ? esc(S.ui.quitAgain) : '✕'}</button>`;
+}
+function quit(): void {
+  if (Date.now() - quitArmed < 3000) { void (win ? win.close() : Promise.resolve(window.close())); return; }
+  quitArmed = Date.now();
+  const show = () => { for (const b of document.querySelectorAll<HTMLButtonElement>('button.quit')) b.outerHTML = quitButton(); };
+  show();
+  setTimeout(show, 3050);
+}
+
 function controls(): string {
   if (cfg().lowKey) return `<span class="controls"><button data-action="lowkey" title="${esc(S.follow.lowKey)}">◱</button></span>`;
   // A dot-sized window keeps only what it needs to get around.
@@ -803,7 +821,7 @@ function controls(): string {
   const boardButton = narrow ? '' : `<button data-action="scoreboard" aria-pressed="${cfg().scoreboard}" title="${esc(S.follow.scoreboard)}">▤</button>`;
   const lowKeyButton = narrow ? '' : `<button data-action="lowkey" title="${esc(S.follow.lowKey)}">◱</button>`;
   const settingsButton = `<button data-action="settings" title="${esc(S.set.title)}">⚙</button>`;
-  return `<span class="controls">${toggle}${replayMore}${catchButton}${tabButtons}${sizeButton}${styleButton}${boardButton}${lowKeyButton}${settingsButton}<button data-action="back">‹${narrow ? '' : ` ${esc(S.ui.back)}`}</button></span>`;
+  return `<span class="controls">${toggle}${replayMore}${catchButton}${tabButtons}${sizeButton}${styleButton}${boardButton}${lowKeyButton}${settingsButton}<button data-action="back">‹${narrow ? '' : ` ${esc(S.ui.back)}`}</button>${quitButton()}</span>`;
 }
 
 // ---------- game: following ----------
@@ -934,6 +952,7 @@ async function runStep(step: Step, animate: boolean, catchUpRate: number): Promi
     renderZone(step.state, true);
     if (step.events.some((e) => e.type === 'pitch')) app.querySelector('.bubble')?.classList.remove('show', 'hr');
     field.setLabel(batterLabel(step.state, plan), plan.end.get(`r${step.state.batter?.id}`)?.role === 'batter');
+    hideCard();
     await field.play(plan, rate);
     if (gen !== gameGen) return;
     shown = step.state;
@@ -1140,6 +1159,7 @@ function buildGame(): void {
       ${tier === 'full' ? '<div class="below"><div class="mu"></div><table class="ls"></table></div>' : ''}`;
     field = new FieldRenderer(app.querySelector<SVGSVGElement>('svg.field')!, look(s));
     field.show(scene);
+    attachHover(app.querySelector<HTMLElement>('.fieldwrap')!);
   }
   renderText();
   if (field && 'ResizeObserver' in window) {
@@ -1157,6 +1177,44 @@ function buildGame(): void {
 
 /** The state the strike zone last drew. */
 let zoneState: GameState | undefined;
+
+/** Hides the player card; replaced each time the board is built. Pieces move with every step, so it goes then. */
+let hideCard: () => void = () => undefined;
+
+/**
+ * The player card over a piece under the pointer (setting hoverCard). It reads the state on screen, so
+ * today's lines never run ahead of the board; a replay leaves out the league totals.
+ */
+function attachHover(wrap: HTMLElement): void {
+  const card = document.createElement('div');
+  card.className = 'pcard';
+  card.hidden = true;
+  wrap.append(card);
+  let key = '';
+  hideCard = () => { key = ''; card.hidden = true; };
+  wrap.addEventListener('pointerover', (e) => {
+    if (!cfg().hoverCard || !field || !shown) return;
+    const g = (e.target as Element).closest?.('g[data-key]');
+    const k = g?.getAttribute('data-key') ?? '';
+    const piece = k ? field.pieceOf(k) : undefined;
+    if (!g || !piece || k === key) return;
+    key = k;
+    card.innerHTML = playerCardView(piece.id, piece.role === 'pitcher', piece.name ?? '', shown, mode === 'live', lang);
+    card.hidden = false;
+    // Above the piece if it fits, else below; always inside the board.
+    const w = wrap.getBoundingClientRect(), r = g.getBoundingClientRect();
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const x = Math.max(2, Math.min(w.width - cw - 2, r.left + r.width / 2 - w.left - cw / 2));
+    const above = r.top - w.top - ch - 4;
+    const y = above >= 2 ? above : Math.min(w.height - ch - 2, r.bottom - w.top + 4);
+    card.style.left = `${Math.round(x)}px`;
+    card.style.top = `${Math.round(Math.max(2, y))}px`;
+  });
+  wrap.addEventListener('pointerout', (e) => {
+    const to = (e.relatedTarget as Element | null)?.closest?.('g[data-key]');
+    if (to?.getAttribute('data-key') !== key) hideCard();
+  });
+}
 
 function renderZone(s: GameState, pop: boolean): void {
   const svg = app.querySelector<SVGSVGElement>('svg.zone');
@@ -1246,6 +1304,7 @@ function replayAction(action: string): void {
   if (action === 'replay-tab') { setTab('replay', !cfg().tabs.replay); return; }
   if (action === 'size') { void cycleTier(); return; }
   if (action === 'settings') { showSettings(); return; }
+  if (action === 'quit') { quit(); return; }
   if (action === 'settings-done') { closeSettings(); return; }
   if (action === 'home') { void goHome(); return; }
   if (action === 'picker') { void showPicker(); return; }

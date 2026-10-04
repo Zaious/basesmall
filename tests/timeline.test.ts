@@ -200,3 +200,38 @@ describe.skipIf(!hasFixture(849841))('game clock', () => {
     expect(end.durationMinutes).toBe(183);
   });
 });
+
+// The hover card's lines are counted from the timeline, so a replay never shows more than has
+// happened. At the end of a game they must equal the official box score, player by player.
+describe('player lines', () => {
+  for (const { pk, note } of FIXTURES) {
+    it.skipIf(!hasFixture(pk))(`${pk} (${note}): every batting and pitching line matches the box score`, () => {
+      const feed = loadFixture(pk) as unknown as { liveData: { boxscore?: { teams?: Record<Side, { players?: Record<string, BoxPlayer> }> } } };
+      const end = buildTimeline(loadFixture(pk)).at(-1)!.state;
+      const wrong: string[] = [];
+      for (const side of ['away', 'home'] as const) {
+        for (const [key, p] of Object.entries(feed.liveData.boxscore?.teams?.[side].players ?? {})) {
+          const id = Number(key.slice(2)), b = p.stats?.batting, q = p.stats?.pitching;
+          if (b && (b.plateAppearances ?? 0) > 0) {
+            const l = end.batLines?.[id];
+            const got = [l?.pa, l?.ab, l?.h, l?.hr, l?.rbi, l?.bb, l?.k], want = [b.plateAppearances, b.atBats, b.hits, b.homeRuns, b.rbi, b.baseOnBalls, b.strikeOuts];
+            if (got.join() !== want.join()) wrong.push(`${key} bat ${got.join()} != ${want.join()}`);
+          }
+          if (q && (q.numberOfPitches ?? 0) > 0) {
+            const l = end.pitchLines?.[id];
+            const got = [l?.pitches, l?.outs, l?.h, l?.bb, l?.k], want = [q.numberOfPitches, q.outs, q.hits, q.baseOnBalls, q.strikeOuts];
+            if (got.join() !== want.join()) wrong.push(`${key} pitch ${got.join()} != ${want.join()}`);
+          }
+        }
+      }
+      expect(wrong).toEqual([]);
+    });
+  }
+});
+
+interface BoxPlayer {
+  stats?: {
+    batting?: { plateAppearances?: number; atBats?: number; hits?: number; homeRuns?: number; rbi?: number; baseOnBalls?: number; strikeOuts?: number };
+    pitching?: { numberOfPitches?: number; outs?: number; hits?: number; baseOnBalls?: number; strikeOuts?: number };
+  };
+}

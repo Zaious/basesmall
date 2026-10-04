@@ -348,6 +348,11 @@ export class FieldRenderer {
 
   // ---------- pieces ----------
 
+  /** The piece drawn under a `data-key`, for the hover card. */
+  pieceOf(key: string): Piece | undefined {
+    return this.drawn.get(key)?.piece;
+  }
+
   private add(p: Piece): Drawn {
     const d: Drawn = { piece: p, spot: p.spot, side: p.side, g: el('g', {}), flip: el('g', {}), opacity: 1 };
     this.drawn.set(p.key, d);

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { buildTimeline } from '../src/data/mlb/timeline.ts';
 import { detectLang, eventLine, LANGS, STRINGS } from '../src/i18n/index.ts';
 import { cssFill, pieceColours, piecePaints, svgFill, teamPaint } from '../src/styles/team-colors.ts';
-import type { GameEvent } from '../src/model/types.ts';
+import type { GameEvent, GameState } from '../src/model/types.ts';
+import { playerCardView } from '../src/ui/views.ts';
 import { FIXTURES, hasFixture, loadFixture } from './fixtures.ts';
 
 describe('event text', () => {
@@ -91,5 +92,44 @@ describe('piece colours', () => {
     // PHI red and ATL scarlet clash
     expect(pieceColours('PHI', 'ATL')).toEqual({ away: '#002D72', home: '#CE1141' });
     expect(pieceColours('PHI', 'ATL', 'PHI')).toEqual({ away: '#E81828', home: '#13274F' });
+  });
+});
+
+describe('player card', () => {
+  const state = {
+    gamePk: 1, status: 'live', teams: { away: { id: 1, abbr: 'NYY', name: 'Yankees' }, home: { id: 2, abbr: 'TB', name: 'Rays' } },
+    inning: 8, half: 'top', outs: 2, balls: 0, strikes: 0, bases: {}, score: { away: 0, home: 1 },
+    hits: { away: 3, home: 5 }, errors: { away: 0, home: 0 }, linescore: { away: [], home: [] }, atBat: [],
+    roster: {
+      669224: { name: 'Austin Wells', pos: 'C', bats: 'L', throws: 'R', totals: { kind: 'postseason', batting: { avg: '.444', hr: 0, rbi: 4, ops: '.920', ab: 9 } } },
+      543037: { name: 'Gerrit Cole', pos: 'P', bats: 'R', throws: 'R', totals: { kind: 'postseason', pitching: { era: '1.80', ip: '5.0', k: 5, w: 0, l: 1 } } },
+      1: { name: 'Nobody Yet', pos: 'SS', bats: 'S' },
+    },
+    batLines: { 669224: { pa: 4, ab: 3, h: 1, hr: 0, rbi: 0, bb: 1, k: 1 } },
+    pitchLines: { 543037: { pitches: 87, outs: 16, h: 4, bb: 2, k: 6 } },
+  } as unknown as GameState;
+
+  it('a batter: position, hand, today so far, and the postseason line when live', () => {
+    const zh = playerCardView(669224, false, 'Wells', state, true, 'zh-Hant');
+    expect(zh).toContain('Austin Wells');
+    expect(zh).toContain('捕手 · 左打');
+    expect(zh).toContain('今日 3 打數 1 安打 · 1 保送 · 1 三振');
+    expect(zh).toContain('季後賽 打擊率 .444 · 0 全壘打 · 4 打點 · OPS .920');
+    const en = playerCardView(669224, false, 'Wells', state, true, 'en');
+    expect(en).toContain('Today 1-for-3 · 1 BB · 1 K');
+    expect(en).toContain('Postseason .444 · 0 HR · 4 RBI · .920 OPS');
+  });
+
+  it('a pitcher: pitches, innings from outs, and no totals in a replay', () => {
+    const zh = playerCardView(543037, true, 'Cole', state, false, 'zh-Hant');
+    expect(zh).toContain('投手 · 右投');
+    expect(zh).toContain('今日 87 球 · 5.1 局 · 6 三振 · 2 保送 · 4 安打');
+    expect(zh).not.toContain('季後賽');
+    expect(playerCardView(543037, true, 'Cole', state, true, 'en')).toContain('Postseason 1.80 ERA · 5.0 IP · 5 K · 0-1');
+  });
+
+  it('someone with no plate appearance yet, and a switch hitter', () => {
+    expect(playerCardView(1, false, 'Yet', state, true, 'zh-Hant')).toContain('游擊手 · 左右開弓');
+    expect(playerCardView(1, false, 'Yet', state, true, 'zh-Hant')).toContain('今日還沒打擊');
   });
 });

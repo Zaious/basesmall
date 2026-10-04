@@ -6,10 +6,13 @@
 import type {
   BattedBall,
   Base,
+  BatLine,
   GameEvent,
   GameState,
   Hand,
+  PitchLine,
   PitchMark,
+  PlayerCard,
   PlayerRef,
   RunnerFrom,
   RunnerTo,
@@ -19,7 +22,7 @@ import type {
 } from '../../model/types.ts';
 import type { MlbFeed, MlbPlay, MlbPlayEvent } from './feed-types.ts';
 import {
-  AT_BAT_EVENTS, AUTOMATIC_CALL, BASERUNNING_EVENTS, HIT_EVENTS, PITCH_CALL, mapStatus,
+  AT_BAT_EVENTS, AUTOMATIC_CALL, BASERUNNING_EVENTS, HIT_EVENTS, NON_AT_BAT_EVENTS, PITCH_CALL, STRIKEOUT_EVENTS, mapStatus,
 } from './codes.ts';
 
 export { mapStatus };
@@ -40,8 +43,35 @@ export function teamsOf(feed: MlbFeed): Record<Side, TeamRef> {
 }
 
 /** State before the first pitch, or of a game with no plays yet. */
+/** Hover-card facts for everyone in the feed: position, hands, and the league's running totals. */
+export function rosterOf(feed: MlbFeed): Record<number, PlayerCard> {
+  const type = feed.gameData.game?.type;
+  const kind = type === 'R' ? 'season' : type && 'FDLW'.includes(type) ? 'postseason' : undefined;
+  const box = feed.liveData.boxscore?.teams;
+  const out: Record<number, PlayerCard> = {};
+  for (const [key, p] of Object.entries(feed.gameData.players ?? {})) {
+    const b = box?.away?.players?.[key] ?? box?.home?.players?.[key];
+    const card: PlayerCard = {};
+    if (p.fullName) card.name = p.fullName;
+    const pos = b?.position?.abbreviation ?? p.primaryPosition?.abbreviation;
+    if (pos) card.pos = pos;
+    if (p.batSide?.code) card.bats = p.batSide.code === 'S' ? 'S' : hand(p.batSide.code);
+    if (p.pitchHand?.code) card.throws = hand(p.pitchHand.code);
+    const s = b?.seasonStats;
+    if (kind && s) {
+      const bat = s.batting, pit = s.pitching;
+      card.totals = { kind };
+      if (bat && (bat.atBats ?? 0) > 0) card.totals.batting = { avg: bat.avg, hr: bat.homeRuns, rbi: bat.rbi, ops: bat.ops, ab: bat.atBats };
+      if (pit && (pit.gamesPlayed ?? 0) > 0) card.totals.pitching = { era: pit.era, ip: pit.inningsPitched, k: pit.strikeOuts, w: pit.wins, l: pit.losses };
+    }
+    out[p.id] = card;
+  }
+  return out;
+}
+
 export function initialState(feed: MlbFeed): GameState {
   return {
+    roster: rosterOf(feed),
     gamePk: feed.gamePk,
     status: mapStatus(feed.gameData.status),
     ...(feed.gameData.status.detailedState ? { statusDetail: feed.gameData.status.detailedState } : {}),
@@ -106,8 +136,18 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
   const hits: Record<Side, number> = { away: 0, home: 0 };
   const errors: Record<Side, number> = { away: 0, home: 0 };
   const runsByInning: Record<Side, (number | null)[]> = { away: [], home: [] };
-  const line = new Map<number, { ab: number; h: number }>();
+  const line = new Map<number, BatLine>();
   const pitchCount = new Map<number, number>();
+  // Pitchers' lines apart from the pitch count, and the outs already credited in this half-inning.
+  const pitching = new Map<number, Omit<PitchLine, 'pitches'>>();
+  let creditedOuts = 0;
+  const zeroBat = (): BatLine => ({ pa: 0, ab: 0, h: 0, hr: 0, rbi: 0, bb: 0, k: 0 });
+  const pitcherLine = (id: number) => pitching.get(id) ?? { outs: 0, h: 0, bb: 0, k: 0 };
+  const snapshot = () => ({
+    batLines: Object.fromEntries(line),
+    pitchLines: Object.fromEntries([...new Set([...pitchCount.keys(), ...pitching.keys()])]
+      .map((id) => [id, { ...pitcherLine(id), pitches: pitchCount.get(id) ?? 0 }])),
+  });
   const lastPitcher: Partial<Record<Side, number>> = {};
   let bases = new Map<Base, number>();
   let lastHalf = '';
@@ -127,6 +167,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
     if (halfKey !== lastHalf) {
       bases = new Map();
       lastHalf = halfKey;
+      creditedOuts = 0;
       pendingInning = true;
       runsByInning[bat][inning - 1] ??= 0;
     }
@@ -237,13 +278,20 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
         events.push({ type: 'scoreChange', side: bat, runs, score: { ...score } });
       }
 
-      const today = line.get(batter.id) ?? { ab: 0, h: 0 };
+      let today = line.get(batter.id) ?? zeroBat();
       let outs = e.count.outs;
       if (isLast) {
         const result = play.result.eventType ?? 'unknown';
-        if (AT_BAT_EVENTS.has(result)) today.ab++;
-        if (HIT_EVENTS.has(result)) { today.h++; hits[bat]++; }
+        const walk = result === 'walk' || result === 'intent_walk', k = STRIKEOUT_EVENTS.has(result);
+        today = {
+          pa: today.pa + (AT_BAT_EVENTS.has(result) || NON_AT_BAT_EVENTS.has(result) ? 1 : 0), ab: today.ab + (AT_BAT_EVENTS.has(result) ? 1 : 0), h: today.h + (HIT_EVENTS.has(result) ? 1 : 0),
+          hr: today.hr + (result === 'home_run' ? 1 : 0), rbi: today.rbi + (play.result.rbi ?? 0),
+          bb: today.bb + (walk ? 1 : 0), k: today.k + (k ? 1 : 0),
+        };
+        if (HIT_EVENTS.has(result)) hits[bat]++;
         line.set(batter.id, today);
+        const pl = pitcherLine(pitcherId);
+        pitching.set(pitcherId, { ...pl, h: pl.h + (HIT_EVENTS.has(result) ? 1 : 0), bb: pl.bb + (walk ? 1 : 0), k: pl.k + (k ? 1 : 0) });
         // Pitch-level outs are recorded before the play's outs; the play-level count is after.
         outs = play.count.outs;
         const last = e.isPitch ? battedBall(e) : undefined;
@@ -253,6 +301,12 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           type: 'plateAppearance', result, rbi: play.result.rbi ?? 0, batter, isOut: !!play.result.isOut,
           ...(last ? { ball: last } : {}), ...(extraOuts.length ? { outsOnBases: extraOuts } : {}),
         });
+      }
+
+      if (outs > creditedOuts) {
+        const pl = pitcherLine(pitcherId);
+        pitching.set(pitcherId, { ...pl, outs: pl.outs + (outs - creditedOuts) });
+        creditedOuts = outs;
       }
 
       const stamped = Date.parse(e.startTime ?? play.about.startTime ?? '');
@@ -279,10 +333,11 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           hits: { ...hits },
           errors: { ...errors },
           linescore: snapshotLinescore(runsByInning),
-          batter: { ...batter, side: hand(play.matchup.batSide?.code), today: { ...today } },
+          batter: { ...batter, side: hand(play.matchup.batSide?.code), today: { ab: today.ab, h: today.h } },
           pitcher: { ...ref(pitcherId), hand: hand(play.matchup.pitchHand?.code), pitches: pc },
           atBat: atBat.map((m) => ({ ...m })),
           teams,
+          ...snapshot(),
         },
       });
     }
@@ -290,7 +345,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
     // Live: a new batter is up but nothing has happened yet. Without this entry the board
     // would still show the previous plate appearance (or the previous half-inning).
     if (!gameOver && entries.length === entriesBefore && play === plays.at(-1) && !play.about.isComplete) {
-      const today = line.get(batter.id) ?? { ab: 0, h: 0 };
+      const today = line.get(batter.id) ?? zeroBat();
       entries.push({
         t: Math.max(lastT, Date.parse(play.about.startTime ?? '') || lastT),
         play: play.about.atBatIndex,
@@ -309,10 +364,11 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           hits: { ...hits },
           errors: { ...errors },
           linescore: snapshotLinescore(runsByInning),
-          batter: { ...batter, side: hand(play.matchup.batSide?.code), today: { ...today } },
+          batter: { ...batter, side: hand(play.matchup.batSide?.code), today: { ab: today.ab, h: today.h } },
           pitcher: { ...ref(pitcherId), hand: hand(play.matchup.pitchHand?.code), pitches: pitchCount.get(pitcherId) ?? 0 },
           atBat: [],
           teams,
+          ...snapshot(),
         },
       });
     }
