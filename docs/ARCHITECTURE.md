@@ -525,6 +525,7 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 - **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。它只在 `src-tauri/tauri.release.conf.json` 裡列為打包資源：放在主設定的話，Tauri 的 build script 在任何建置（包括 `tauri dev`）都要求檔案存在，乾淨的 clone 照 README 建置會直接失敗（CI 第一次跑就是這樣失敗的）。腳本先 `cargo fetch`，因為授權全文在下載下來的原始碼裡，全新的機器還沒有。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
 - **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。
 - **文件**：README 重寫（下載、Windows 警告、隱私、使用方式、從原始碼建置）；`CONTRIBUTING.md`（隊色、風格、錯誤回報、程式規則、**如何接其他聯盟**）；`CHANGELOG.md`；issue 範本（隊色、錯誤回報）。
+- **網站**：`site/` 是 basesmall.chroniclecore.com 的靜態頁（中英各一頁、分享預覽圖、sitemap、結構化資料；不載外部字型、不做分析、不放廣告）。跟工作室其他網站一樣放在 Cloudflare Worker（只服務靜態檔），網域與憑證由 Cloudflare 自動建立；部署設定在維護者的私人 repo，公開 repo 只放頁面。App 的「關於」頁連到這裡（與原始碼），贊助與工作室連結只在網站頁尾與 README。
 - **展示**：README 用一場真實比賽（2026 美聯外卡第 2 戰，Bellinger 的三分砲）錄成 GIF，加一張四種尺寸的圖。錄製時在程式後面墊一個純色視窗，避免桌面上其他東西入鏡；每一格都自動檢查邊框外是否只有底色，不合格的整批刪掉重錄（錄製時就抓到兩次：一次底色視窗被其他視窗蓋過，一次底色視窗沒跟著程式變大）。
 
 **macOS 實機測試**（Intel Core i5、macOS 26.2，草稿裡的 universal dmg，透過 SSH 操作與截圖）：

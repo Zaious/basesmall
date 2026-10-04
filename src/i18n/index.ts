@@ -126,7 +126,7 @@ interface Strings {
     spot: string; spots: Record<'top' | 'bottom' | 'bar', string>;
     events: string; onlyMine: string;
     replay: string; pace: string; paces: Record<'compact' | 'real' | 'fixed' | 'results', string>; showScores: string;
-    about: string; aboutText: string; source: string; stylesFolder: string;
+    about: string; aboutText: string; website: string; source: string; stylesFolder: string;
     /** Who made it. Plain text: the only link in the app is the source code. */
     credit: string;
     more: string; strike: string; fullCount: string; bunt: string; strikeout: string;
@@ -285,7 +285,7 @@ const zh: Strings = {
     events: '要通知的事件', onlyMine: '只通知我追蹤的球隊',
     replay: '重播', pace: '節奏', paces: { compact: '緊湊', real: '原速', fixed: '每球 5 秒', results: '只看結果' }, showScores: '選場時顯示比分',
     about: '關於', aboutText: '非官方的球迷專案，與 MLB、MLBAM、球員工會或任何球隊無關。比賽資料來自 MLB Stats API，由你的電腦直接取得，僅供個人、非商業使用。',
-    source: '原始碼', stylesFolder: '自訂風格資料夾',
+    website: '網站', source: '原始碼', stylesFolder: '自訂風格資料夾',
     credit: '編年史記工作室 ChronicleCore Studio 出品 · 作者 Zaious',
     more: '更多聲音', strike: '好球', fullCount: '滿球數', bunt: '觸擊', strikeout: '三振',
     after: '主隊淘汰後',
@@ -438,7 +438,7 @@ const en: Strings = {
     events: 'Notify me about', onlyMine: 'Only my team',
     replay: 'Replay', pace: 'Pace', paces: { compact: 'Compact', real: 'Real time', fixed: '5 s a pitch', results: 'Results only' }, showScores: 'Show scores when picking',
     about: 'About', aboutText: 'An unofficial fan project, not affiliated with MLB, MLBAM, the MLBPA or any team. Game data comes from the MLB Stats API, fetched by your own computer, for personal, non-commercial use.',
-    source: 'Source code', stylesFolder: 'Custom styles folder',
+    website: 'Website', source: 'Source code', stylesFolder: 'Custom styles folder',
     credit: 'Made by Zaious at ChronicleCore Studio',
     more: 'More sounds', strike: 'Strike', fullCount: 'Full count', bunt: 'Bunt', strikeout: 'Strikeout',
     after: 'When my team is out',
