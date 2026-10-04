@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://basesmall.chroniclecore.com/sitemap.xml

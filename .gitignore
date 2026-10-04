@@ -13,3 +13,7 @@ src-tauri/target-next/
 
 # generated for each release by scripts/third-party-licenses.mjs
 THIRD_PARTY_LICENSES.txt
+
+# local preview copies of docs/media (the site workflow copies them at deploy)
+site/media/demo.gif
+site/media/sizes.png

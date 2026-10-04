@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basesmall: follow MLB games in a tiny always-on-top window</title>
+<meta name="description" content="Basesmall keeps your team's game in a corner of your screen: runners, the count, every pitch and the score, drawn as a few quiet pieces. Free and open source for Windows, with macOS and Linux builds.">
+<link rel="canonical" href="https://basesmall.chroniclecore.com/">
+<link rel="alternate" hreflang="en" href="https://basesmall.chroniclecore.com/">
+<link rel="alternate" hreflang="zh-Hant" href="https://basesmall.chroniclecore.com/zh/">
+<link rel="alternate" hreflang="x-default" href="https://basesmall.chroniclecore.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Basesmall">
+<meta property="og:title" content="Basesmall: Baseball, but small.">
+<meta property="og:description" content="Your team's game in a corner of the screen. Free and open source.">
+<meta property="og:url" content="https://basesmall.chroniclecore.com/">
+<meta property="og:image" content="https://basesmall.chroniclecore.com/media/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#15171C">
+<link rel="icon" type="image/png" href="media/icon.png">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Basesmall",
+  "description": "A tiny always-on-top desktop window that follows MLB games as a few abstract pieces.",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "Windows 10, Windows 11, macOS, Linux",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "url": "https://basesmall.chroniclecore.com/",
+  "downloadUrl": "https://github.com/Zaious/basesmall/releases/latest",
+  "codeRepository": "https://github.com/Zaious/basesmall",
+  "inLanguage": ["en", "zh-Hant"],
+  "author": { "@type": "Person", "name": "Zaious" },
+  "publisher": { "@type": "Organization", "name": "ChronicleCore Studio", "url": "https://studio.chroniclecore.com" }
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./"><img src="media/icon.png" alt="" width="28" height="28"><span>Basesmall</span></a>
+  <nav>
+    <a href="zh/" hreflang="zh-Hant" lang="zh-Hant">中文</a>
+    <a href="https://github.com/Zaious/basesmall">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>Your team's game, in a corner.</h1>
+      <p class="lead">A small window that stays on top and follows MLB games as a few quiet pieces. Free and open source.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#download">Download</a>
+        <a class="btn" href="https://github.com/Zaious/basesmall">Source code</a>
+      </div>
+    </div>
+    <figure class="hero-shot">
+      <img src="media/demo.gif" width="512" height="212" alt="Basesmall replaying a game: pieces on the bases, the count, a numbered pitch in the strike zone, then a three-run home run.">
+      <figcaption>A replay of the 2026 AL Wild Card Series, Game 2.</figcaption>
+    </figure>
+  </section>
+
+  <section class="sizes">
+    <div class="sizes-copy">
+      <h2>As big as you can spare.</h2>
+      <p>Drag the corner and it shows more, or less.</p>
+      <dl>
+        <dt>Dot</dt><dd>A pill with the score, the inning, the bases and the outs.</dd>
+        <dt>Bar</dt><dd>Adds the count and the latest pitch or play.</dd>
+        <dt>Field</dt><dd>Team-coloured pieces with runners' names, the flight of the ball, every pitch numbered in the zone.</dd>
+        <dt>Full</dt><dd>Adds the matchup and the line score.</dd>
+      </dl>
+    </div>
+    <img class="sizes-shot" src="media/sizes.png" width="576" height="1051" loading="lazy" alt="The same game at four sizes, from a small pill to a full panel.">
+  </section>
+
+  <section class="features">
+    <h2>Made to be glanced at.</h2>
+    <ul>
+      <li><b>Follows your team.</b> Live when they play, otherwise a countdown with the probable starters.</li>
+      <li><b>Hides in a keystroke.</b> Ctrl+Alt+Shift+B hides every window, and low-key mode turns it into a plain strip of numbers.</li>
+      <li><b>Notices that never steal focus.</b> A card in the corner for the plays you pick. Sound is off unless you want it.</li>
+      <li><b>Every game today.</b> A scoreboard drawer, postseason series labels, and a quiet tab when another game gets close late.</li>
+      <li><b>Replays without spoilers.</b> Games from 2023 on, at a pace that keeps the rhythm of each at-bat. Scores stay hidden while you pick.</li>
+      <li><b>Your look.</b> Flat or 2.5D, solid or see-through. Every style is a file you can write yourself.</li>
+    </ul>
+  </section>
+
+  <section class="download" id="download">
+    <h2>Download</h2>
+    <div class="platforms">
+      <div class="platform">
+        <h3>Windows</h3>
+        <p>An installer that needs no administrator rights, or a portable zip for work PCs that do not allow installs.</p>
+      </div>
+      <div class="platform">
+        <h3>macOS</h3>
+        <p>One download for Intel and Apple Silicon, signed and notarized by Apple. Newer than the Windows build.</p>
+      </div>
+      <div class="platform">
+        <h3>Linux</h3>
+        <p>AppImage or .deb. Built automatically, not yet tried on a real machine.</p>
+      </div>
+    </div>
+    <a class="btn primary" href="https://github.com/Zaious/basesmall/releases/latest">Download</a>
+    <p class="note">Windows may say it protected your PC, because the app is not code-signed yet: choose More info, then Run anyway. Windows needs the WebView2 Runtime, which Windows 11 includes.</p>
+  </section>
+
+  <section class="privacy">
+    <h2>Runs on your own computer.</h2>
+    <p>No account, no server, no ads, no analytics. Game data comes straight from MLB's public Stats API to your machine, and the app asks GitHub for a newer version once, when you open settings.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Made by Zaious at <a href="https://studio.chroniclecore.com">ChronicleCore Studio</a>. Apache License 2.0.</p>
+  <p class="fine">Basesmall is an independent fan project, not affiliated with, endorsed by, or sponsored by Major League Baseball, MLB Advanced Media, the MLB Players Association, or any team. Game data is MLB's and is used for personal, non-commercial purposes.</p>
+</footer>
+</body>
+</html>
