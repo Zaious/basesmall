@@ -22,6 +22,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#15171C">
 <link rel="icon" type="image/png" href="media/icon.png">
+<link rel="apple-touch-icon" href="media/apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
 <script type="application/ld+json">
 {
@@ -35,10 +36,95 @@
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "url": "https://basesmall.chroniclecore.com/",
   "downloadUrl": "https://github.com/Zaious/basesmall/releases/latest",
+  "image": "https://basesmall.chroniclecore.com/media/og.png",
+  "screenshot": ["https://basesmall.chroniclecore.com/media/demo.gif", "https://basesmall.chroniclecore.com/media/sizes.png"],
+  "featureList": ["Follows your team's live games", "Four sizes, from a pill to a full panel", "Strike zone with every pitch", "Notices that never steal focus", "Replays without spoilers", "Player card on hover", "Lineup and pitchers window", "In-app updates"],
+  "releaseNotes": "https://github.com/Zaious/basesmall/blob/main/CHANGELOG.md",
+  "isAccessibleForFree": true,
   "codeRepository": "https://github.com/Zaious/basesmall",
   "inLanguage": ["en", "zh-Hant"],
   "author": { "@type": "Person", "name": "Zaious" },
   "publisher": { "@type": "Organization", "name": "ChronicleCore Studio", "url": "https://studio.chroniclecore.com" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is this an official MLB app?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Basesmall is an independent fan project, not affiliated with MLB, MLB Advanced Media, the MLB Players Association or any team. Game data comes from MLB's public Stats API, fetched by your own computer, for personal, non-commercial use."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it cost anything? Are there ads?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is free and open source (Apache License 2.0), with no ads and nothing to pay for."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it show video or play the broadcast?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It draws the game with a few pieces: runners, the count, the outs, the score, where each pitch crossed the plate and where the ball went. Sound is off by default, and there are only a few short cues you can choose."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will a replay spoil the result?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Scores stay hidden while you pick a game, and in a replay the players' lines, the lineups and the pitchers only count up to the moment on screen. Games from 2023 on can be replayed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it collect my data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The app does not. No account, no server, no analytics: it talks to MLB for game data and asks GitHub once at start-up whether a newer version exists (you can switch that off)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Windows say it protected my PC?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because the app is not code-signed yet, not because anything is wrong. Choose More info, then Run anyway. The source is public on GitHub, and the installers are built from it there."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work on a Mac or on Linux?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, as experimental builds. The macOS build is signed and notarized by Apple, one file for Intel and Apple Silicon; Linux has an AppImage and a .deb."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I update?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When a newer version is out, the installed app shows a dot on its settings button; press Update in settings and it downloads, installs and restarts. Nothing happens until you press it. For the portable zip, download the new zip."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it cover other leagues?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only MLB for now, regular season and postseason. Other leagues have no public play-by-play data it could use."
+      }
+    }
+  ]
 }
 </script>
 </head>
@@ -62,8 +148,11 @@
       </div>
     </div>
     <figure class="hero-shot">
-      <img src="media/demo.gif" width="512" height="212" alt="Basesmall replaying a game: pieces on the bases, the count, a numbered pitch in the strike zone, then a three-run home run.">
-      <figcaption>A replay of the 2026 AL Wild Card Series, Game 2.</figcaption>
+      <div class="desk">
+        <div class="desk-win" aria-hidden="true"><div class="desk-bar"><i></i><i></i><i></i></div><div class="desk-sheet"><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span><span style="--w:74%"></span><span style="--w:41%"></span><span style="--w:63%"></span><span style="--w:56%"></span><span style="--w:33%"></span><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span><span style="--w:74%"></span><span style="--w:41%"></span><span style="--w:63%"></span><span style="--w:56%"></span><span style="--w:33%"></span><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span></div></div>
+        <img class="desk-app" src="media/demo.gif" width="512" height="212" alt="Basesmall replaying a game: pieces on the bases, the count, a numbered pitch in the strike zone, then a three-run home run.">
+      </div>
+      <figcaption>Work on screen, Basesmall in the corner: a replay of the 2026 AL Wild Card Series, Game 2.</figcaption>
     </figure>
   </section>
 
@@ -78,7 +167,7 @@
         <dt>Full</dt><dd>Adds the matchup and the line score.</dd>
       </dl>
     </div>
-    <img class="sizes-shot" src="media/sizes.png" width="576" height="1051" loading="lazy" alt="The same game at four sizes, from a small pill to a full panel.">
+    <img class="sizes-shot" src="media/sizes.png" width="576" height="1015" loading="lazy" alt="The same game at four sizes, from a small pill to a full panel.">
   </section>
 
   <section class="features">
@@ -89,6 +178,8 @@
       <li><b>Notices that never steal focus.</b> A card in the corner for the plays you pick. Sound is off unless you want it.</li>
       <li><b>Every game today.</b> A scoreboard drawer, postseason series labels, and a quiet tab when another game gets close late.</li>
       <li><b>Replays without spoilers.</b> Games from 2023 on, at a pace that keeps the rhythm of each at-bat. Scores stay hidden while you pick.</li>
+      <li><b>Hover to see who it is.</b> Rest the pointer on a piece for the player's line so far today, and their regular-season and postseason totals.</li>
+      <li><b>Lineup and pitchers.</b> An optional window with the batting order, who is up and who is on deck, and every pitcher the fielding team has used.</li>
       <li><b>Your look.</b> Flat or 2.5D, solid or see-through. Every style is a file you can write yourself.</li>
     </ul>
   </section>
@@ -145,6 +236,19 @@
     </form>
     <p class="msg" role="status" aria-live="polite"></p>
     <p class="fine">Kept: your email, the phone you picked, the language and the date, stored on Cloudflare. Used only for that one message, after which the whole list is deleted; never shared, nothing else sent. You can remove yourself any time: enter your email above and choose Remove my email.</p>
+  </section>
+
+  <section class="faq" id="faq">
+    <h2>Questions</h2>
+    <details><summary>Is this an official MLB app?</summary><p>No. Basesmall is an independent fan project, not affiliated with MLB, MLB Advanced Media, the MLB Players Association or any team. Game data comes from MLB&#x27;s public Stats API, fetched by your own computer, for personal, non-commercial use.</p></details>
+    <details><summary>Does it cost anything? Are there ads?</summary><p>It is free and open source (Apache License 2.0), with no ads and nothing to pay for.</p></details>
+    <details><summary>Does it show video or play the broadcast?</summary><p>No. It draws the game with a few pieces: runners, the count, the outs, the score, where each pitch crossed the plate and where the ball went. Sound is off by default, and there are only a few short cues you can choose.</p></details>
+    <details><summary>Will a replay spoil the result?</summary><p>No. Scores stay hidden while you pick a game, and in a replay the players&#x27; lines, the lineups and the pitchers only count up to the moment on screen. Games from 2023 on can be replayed.</p></details>
+    <details><summary>Does it collect my data?</summary><p>The app does not. No account, no server, no analytics: it talks to MLB for game data and asks GitHub once at start-up whether a newer version exists (you can switch that off).</p></details>
+    <details><summary>Why does Windows say it protected my PC?</summary><p>Because the app is not code-signed yet, not because anything is wrong. Choose More info, then Run anyway. The source is public on GitHub, and the installers are built from it there.</p></details>
+    <details><summary>Does it work on a Mac or on Linux?</summary><p>Yes, as experimental builds. The macOS build is signed and notarized by Apple, one file for Intel and Apple Silicon; Linux has an AppImage and a .deb.</p></details>
+    <details><summary>How do I update?</summary><p>When a newer version is out, the installed app shows a dot on its settings button; press Update in settings and it downloads, installs and restarts. Nothing happens until you press it. For the portable zip, download the new zip.</p></details>
+    <details><summary>Does it cover other leagues?</summary><p>Only MLB for now, regular season and postseason. Other leagues have no public play-by-play data it could use.</p></details>
   </section>
 
   <section class="privacy">

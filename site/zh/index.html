@@ -22,6 +22,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#15171C">
 <link rel="icon" type="image/png" href="../media/icon.png">
+<link rel="apple-touch-icon" href="../media/apple-touch-icon.png">
 <link rel="stylesheet" href="../style.css">
 <script type="application/ld+json">
 {
@@ -35,10 +36,95 @@
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "url": "https://basesmall.chroniclecore.com/zh/",
   "downloadUrl": "https://github.com/Zaious/basesmall/releases/latest",
+  "image": "https://basesmall.chroniclecore.com/media/og.png",
+  "screenshot": ["https://basesmall.chroniclecore.com/media/demo.gif", "https://basesmall.chroniclecore.com/media/sizes-zh.png"],
+  "featureList": ["跟主隊的直播比賽", "四種尺寸，從小膠囊到完整面板", "好球帶與每一球的位置", "不搶焦點的通知", "不爆雷的重播", "球員資料卡", "打線與投手視窗", "App 內更新"],
+  "releaseNotes": "https://github.com/Zaious/basesmall/blob/main/CHANGELOG.md",
+  "isAccessibleForFree": true,
   "codeRepository": "https://github.com/Zaious/basesmall",
   "inLanguage": ["zh-Hant", "en"],
   "author": { "@type": "Person", "name": "Zaious" },
   "publisher": { "@type": "Organization", "name": "編年史記工作室 ChronicleCore Studio", "url": "https://studio.chroniclecore.com" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "這是 MLB 官方的嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "不是。Basesmall 是獨立的球迷專案，跟 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係。比賽資料來自 MLB 公開的 Stats API，由你的電腦直接取得，僅供個人、非商業使用。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "要錢嗎？有廣告嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "完全免費、開源（Apache License 2.0），沒有廣告，也沒有付費功能。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "會播影片或轉播的聲音嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "不會。它只用幾顆棋子畫出壘上跑者、球數、出局數、比分、每一球的位置和擊球方向。音效預設關閉，只有幾個可以自己選的短提示音。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "重播會不會爆雷？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "不會。選場時不顯示比分；重播時球員成績、打線和投手都只算到畫面上那一刻。2023 年以後的比賽都能重播。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "會收集我的資料嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "程式不會。不用帳號、沒有伺服器、不做分析；它只連 MLB 的比賽資料，以及每次啟動時問 GitHub 一次有沒有新版本（可以在設定關掉）。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Windows 為什麼說「已保護您的電腦」？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "因為程式還沒有程式碼簽章，不代表有問題。按「其他資訊」，再按「仍要執行」。原始碼公開在 GitHub，安裝檔由 GitHub 從原始碼自動建置。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Mac 和 Linux 能用嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "可以，目前標為實驗性。Mac 版已通過 Apple 簽章與公證，Intel 和 Apple Silicon 共用一個檔案；Linux 有 AppImage 和 .deb。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "怎麼更新？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "安裝版有新版時，設定按鈕會出現一個小點，到設定按「更新」就會下載、安裝並重開，不按就不會動。免安裝版請下載新的 zip。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "支援其他聯盟嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "目前只有 MLB，例行賽和季後賽都可以。其他聯盟目前沒有可以使用的公開逐球資料。"
+      }
+    }
+  ]
 }
 </script>
 </head>
@@ -62,8 +148,11 @@
       </div>
     </div>
     <figure class="hero-shot">
-      <img src="../media/demo.gif" width="512" height="212" alt="Basesmall 重播一場比賽：壘上的棋子、球數、好球帶裡有編號的投球，接著一支三分砲。">
-      <figcaption>2026 美聯外卡系列賽第二戰的重播。</figcaption>
+      <div class="desk">
+        <div class="desk-win" aria-hidden="true"><div class="desk-bar"><i></i><i></i><i></i></div><div class="desk-sheet"><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span><span style="--w:74%"></span><span style="--w:41%"></span><span style="--w:63%"></span><span style="--w:56%"></span><span style="--w:33%"></span><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span><span style="--w:74%"></span><span style="--w:41%"></span><span style="--w:63%"></span><span style="--w:56%"></span><span style="--w:33%"></span><span style="--w:38%"></span><span style="--w:72%"></span><span style="--w:55%"></span><span style="--w:64%"></span><span style="--w:48%"></span><span style="--w:30%"></span><span style="--w:81%"></span><span style="--w:44%"></span><span style="--w:58%"></span><span style="--w:70%"></span><span style="--w:52%"></span><span style="--w:66%"></span><span style="--w:35%"></span><span style="--w:59%"></span><span style="--w:47%"></span></div></div>
+        <img class="desk-app" src="../media/demo.gif" width="512" height="212" alt="Basesmall 重播一場比賽：壘上的棋子、球數、好球帶裡有編號的投球，接著一支三分砲。">
+      </div>
+      <figcaption>工作的畫面，角落開著 Basesmall：2026 美聯外卡系列賽第二戰的重播。</figcaption>
     </figure>
   </section>
 
@@ -78,7 +167,7 @@
         <dt>全</dt><dd>再加上投打對決和逐局比分。</dd>
       </dl>
     </div>
-    <img class="sizes-shot" src="../media/sizes.png" width="576" height="1051" loading="lazy" alt="同一場比賽的四種尺寸，從小膠囊到完整面板。">
+    <img class="sizes-shot" src="../media/sizes-zh.png" width="576" height="1015" loading="lazy" alt="同一場比賽的四種尺寸，從小膠囊到完整面板。">
   </section>
 
   <section class="features">
@@ -89,6 +178,8 @@
       <li><b>通知不搶焦點。</b>只跳你選的事件，卡片在角落，你打字不會被打斷。音效預設關閉。</li>
       <li><b>今天每一場。</b>計分板抽屜、季後賽系列賽標示，另一場比賽後段膠著時會出現一個安靜的頁籤。</li>
       <li><b>重播不爆雷。</b>2023 年以後的比賽，保留每個打席的節奏；選場時不顯示比分。</li>
+      <li><b>滑鼠移過去就知道是誰。</b>停在棋子上，顯示球員今天到這一刻的成績，以及例行賽、季後賽的累計。</li>
+      <li><b>打線與投手。</b>選配的小視窗：攻方一到九棒、誰在打、下一棒是誰，以及守備方這場用過的投手。</li>
       <li><b>你的樣子。</b>平面或 2.5D，實底或透明。每個風格都是一個檔案，可以自己寫。</li>
     </ul>
   </section>
@@ -145,6 +236,19 @@
     </form>
     <p class="msg" role="status" aria-live="polite"></p>
     <p class="fine">只存你的 Email、選的手機、語言和登記日期，放在 Cloudflare 上。只用來寄那一封信，寄完就刪除整份名單；不給任何人，也不寄別的東西。隨時可以在上面輸入 Email、按「刪除我的 Email」。</p>
+  </section>
+
+  <section class="faq" id="faq">
+    <h2>常見問題</h2>
+    <details><summary>這是 MLB 官方的嗎？</summary><p>不是。Basesmall 是獨立的球迷專案，跟 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係。比賽資料來自 MLB 公開的 Stats API，由你的電腦直接取得，僅供個人、非商業使用。</p></details>
+    <details><summary>要錢嗎？有廣告嗎？</summary><p>完全免費、開源（Apache License 2.0），沒有廣告，也沒有付費功能。</p></details>
+    <details><summary>會播影片或轉播的聲音嗎？</summary><p>不會。它只用幾顆棋子畫出壘上跑者、球數、出局數、比分、每一球的位置和擊球方向。音效預設關閉，只有幾個可以自己選的短提示音。</p></details>
+    <details><summary>重播會不會爆雷？</summary><p>不會。選場時不顯示比分；重播時球員成績、打線和投手都只算到畫面上那一刻。2023 年以後的比賽都能重播。</p></details>
+    <details><summary>會收集我的資料嗎？</summary><p>程式不會。不用帳號、沒有伺服器、不做分析；它只連 MLB 的比賽資料，以及每次啟動時問 GitHub 一次有沒有新版本（可以在設定關掉）。</p></details>
+    <details><summary>Windows 為什麼說「已保護您的電腦」？</summary><p>因為程式還沒有程式碼簽章，不代表有問題。按「其他資訊」，再按「仍要執行」。原始碼公開在 GitHub，安裝檔由 GitHub 從原始碼自動建置。</p></details>
+    <details><summary>Mac 和 Linux 能用嗎？</summary><p>可以，目前標為實驗性。Mac 版已通過 Apple 簽章與公證，Intel 和 Apple Silicon 共用一個檔案；Linux 有 AppImage 和 .deb。</p></details>
+    <details><summary>怎麼更新？</summary><p>安裝版有新版時，設定按鈕會出現一個小點，到設定按「更新」就會下載、安裝並重開，不按就不會動。免安裝版請下載新的 zip。</p></details>
+    <details><summary>支援其他聯盟嗎？</summary><p>目前只有 MLB，例行賽和季後賽都可以。其他聯盟目前沒有可以使用的公開逐球資料。</p></details>
   </section>
 
   <section class="privacy">

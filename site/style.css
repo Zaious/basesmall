@@ -48,6 +48,18 @@ p { margin: 0; }
 .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-shot { margin: 0; }
 .hero-shot img { display: block; width: 100%; border-radius: var(--radius); background: #15171C; box-shadow: 0 18px 50px rgb(21 23 28 / .28); image-rendering: auto; }
+
+/* The hero picture: a plain work window (a spreadsheet of grey bars), the real app over its corner. */
+.desk { position: relative; padding-bottom: 16%; }
+.desk-win { aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line);
+  box-shadow: 0 18px 50px rgb(21 23 28 / .14); }
+.desk-bar { display: flex; gap: 6px; align-items: center; height: 26px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.desk-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.desk-sheet { display: grid; grid-template-columns: .55fr 1.5fr 1fr 1fr 1fr; }
+.desk-sheet span { position: relative; height: 24px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.desk-sheet span::after { content: ''; position: absolute; left: 8px; top: 10px; width: var(--w); max-width: calc(100% - 16px); height: 5px;
+  border-radius: 3px; background: color-mix(in srgb, var(--muted) 30%, transparent); }
+.hero-shot .desk-app { position: absolute; right: -3%; bottom: 0; width: 68%; border: 1px solid #2A2E37; box-shadow: 0 18px 44px rgb(0 0 0 / .45); }
 figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); }
 
 /* Sizes: the tall picture beside a short definition list. */
@@ -100,6 +112,17 @@ dd { margin: 0; color: var(--muted); }
 .waitlist .fine { font-size: 13px; color: var(--muted); }
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 main.done { padding: 96px 24px; display: grid; gap: 16px; font-size: 18px; }
+
+/* Questions: one line each until opened. */
+.faq { padding: 64px 0 24px; border-top: 1px solid var(--line); display: grid; max-width: 760px; }
+.faq h2 { margin-bottom: 18px; }
+.faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+.faq summary { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; font-weight: 650; list-style: none; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; color: var(--muted); font-weight: 400; }
+.faq details[open] summary::after { content: '\2212'; }
+.faq summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.faq details p { margin-top: 8px; color: var(--muted); }
 
 .privacy { padding: 64px 0 80px; display: grid; gap: 14px; max-width: 760px; }
 .privacy p { color: var(--muted); }

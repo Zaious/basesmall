@@ -1,0 +1,29 @@
+# Basesmall
+
+> Basesmall is a free, open-source desktop app that follows live MLB games in a small window that stays on top of your other windows. It draws the game as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate and where the ball went. It is an unofficial fan project, not affiliated with MLB. Windows is the main platform; macOS and Linux builds are experimental.
+
+- Free, no ads, nothing to pay for. Apache License 2.0. Made by Zaious at ChronicleCore Studio.
+- Runs entirely on the user's computer: no account, no server, no analytics. Game data comes from MLB's public Stats API, for personal, non-commercial use. The app asks GitHub once at start-up whether a newer version exists (can be switched off).
+- Four sizes, from a pill with the score to a panel with the board, the strike zone, the matchup and the line score.
+- Follows the user's team: the live game when there is one, otherwise a countdown with the probable starters.
+- Replays games from the 2023 season on, without spoilers.
+- A player card on hover (today's line, regular-season and postseason totals) and an optional lineup and pitchers window.
+- Notices that never take focus, low-key mode, and hotkeys to hide everything.
+- Installed copies update themselves when the user presses Update; the portable zip links to the download page.
+- English and Traditional Chinese.
+
+## Pages
+
+- [Basesmall](https://basesmall.chroniclecore.com/): what it does, download, questions and answers
+- [Basesmall 繁體中文](https://basesmall.chroniclecore.com/zh/): 中文介紹、下載、常見問題
+
+## Download
+
+- [Latest release](https://github.com/Zaious/basesmall/releases/latest): Windows installer (no administrator rights) and portable zip, macOS disk image (signed and notarized by Apple), Linux AppImage and .deb
+
+## Source
+
+- [Source code](https://github.com/Zaious/basesmall)
+- [README](https://github.com/Zaious/basesmall/blob/main/README.md)
+- [Changelog](https://github.com/Zaious/basesmall/blob/main/CHANGELOG.md)
+- [Contributing](https://github.com/Zaious/basesmall/blob/main/CONTRIBUTING.md)
