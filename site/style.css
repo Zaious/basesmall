@@ -28,7 +28,7 @@ img { max-width: 100%; height: auto; }
 .top nav a { color: var(--muted); text-decoration: none; }
 .top nav a:hover { color: var(--text); }
 
-h1, h2, h3 { line-height: 1.15; letter-spacing: -0.01em; margin: 0; }
+h1, h2, h3 { line-height: 1.15; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
 h1 { font-size: clamp(34px, 5vw, 54px); font-weight: 700; max-width: 14em; }
 h2 { font-size: clamp(26px, 3.2vw, 36px); font-weight: 680; }
 h3 { font-size: 19px; font-weight: 650; }
@@ -92,8 +92,8 @@ dd { margin: 0; color: var(--muted); }
 .note[hidden] { display: none; }
 
 /* Mobile waitlist: one line of form on a wide screen. */
-.waitlist { padding: 64px 0; border-top: 1px solid var(--line); display: grid; gap: 16px; max-width: 760px; }
-.waitlist > p { color: var(--muted); }
+.waitlist { padding: 64px 0; border-top: 1px solid var(--line); }
+.waitlist .side p, .privacy .body p { color: var(--muted); }
 .waitlist form { display: flex; flex-wrap: wrap; align-items: end; gap: 14px 18px; margin-top: 8px; }
 .waitlist .email { display: grid; gap: 6px; flex: 1 1 260px; font-size: 15px; color: var(--muted); }
 .waitlist input[type=email] { height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel);
@@ -114,9 +114,9 @@ dd { margin: 0; color: var(--muted); }
 main.done { padding: 96px 24px; display: grid; gap: 16px; font-size: 18px; }
 
 /* Questions: one line each until opened. */
-.faq { padding: 64px 0 24px; border-top: 1px solid var(--line); display: grid; max-width: 760px; }
-.faq h2 { margin-bottom: 18px; }
+.faq { padding: 64px 0; border-top: 1px solid var(--line); }
 .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+.faq details:first-child { padding-top: 0; }
 .faq summary { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; font-weight: 650; list-style: none; }
 .faq summary::-webkit-details-marker { display: none; }
 .faq summary::after { content: '+'; color: var(--muted); font-weight: 400; }
@@ -124,11 +124,20 @@ main.done { padding: 96px 24px; display: grid; gap: 16px; font-size: 18px; }
 .faq summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .faq details p { margin-top: 8px; color: var(--muted); }
 
-.privacy { padding: 64px 0 80px; display: grid; gap: 14px; max-width: 760px; }
-.privacy p { color: var(--muted); }
+.privacy { padding: 64px 0 80px; border-top: 1px solid var(--line); }
 
-footer { padding-top: 28px; padding-bottom: 48px; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 15px; color: var(--muted); }
-footer .fine { font-size: 13px; max-width: 60em; }
+/* Narrow sections: the heading on the left, the content on the right, so the column is used. */
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px 64px; align-items: start; }
+.split .side { display: grid; gap: 14px; align-content: start; }
+.split .body { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.split .aside { font-size: 15px; color: var(--muted); }
+/* Chinese has no spaces: a heading that must break, breaks between these. */
+.phrase { display: inline-block; }
+
+footer { padding-top: 28px; padding-bottom: 48px; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 8px 64px; font-size: 15px; color: var(--muted); }
+footer .credits { display: grid; gap: 8px; align-content: start; }
+footer .fine { font-size: 13px; }
 
 @media (max-width: 860px) {
   .hero, .sizes { grid-template-columns: 1fr; gap: 36px; }
@@ -138,6 +147,7 @@ footer .fine { font-size: 13px; max-width: 60em; }
   .sizes-copy { position: static; }
   .features ul { grid-template-columns: 1fr; padding: 24px; }
   .platforms { grid-template-columns: 1fr; gap: 22px; }
+  .split, footer { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .top, main, footer { padding-left: 16px; padding-right: 16px; }

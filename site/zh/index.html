@@ -216,50 +216,65 @@
     <p class="note ver" hidden>最新版 <b></b>。所有版本與更新紀錄在 <a href="https://github.com/Zaious/basesmall/releases">GitHub</a>。</p>
   </section>
 
-  <section class="waitlist" id="waitlist">
-    <h2>想要手機版嗎？</h2>
-    <p>現在只有電腦版。想要的人夠多，就認真考慮做手機版。留下 Email，有消息時（做或不做）寄一封信告訴你。</p>
-    <form id="waitlist-form" method="post" action="/api/waitlist">
-      <input type="hidden" name="lang" value="zh-Hant">
-      <label class="hp" aria-hidden="true">網站<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-      <label class="email"><span>Email</span><input type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com"></label>
-      <fieldset class="phones">
-        <legend>你的手機</legend>
-        <label><input type="radio" name="phone" value="ios"> iPhone</label>
-        <label><input type="radio" name="phone" value="android"> Android</label>
-        <label><input type="radio" name="phone" value="either" checked> 都可以</label>
-      </fieldset>
-      <div class="actions">
-        <button class="btn primary" type="submit" name="action" value="join">登記</button>
-        <button class="linklike" type="submit" name="action" value="leave">刪除我的 Email</button>
-      </div>
-    </form>
-    <p class="msg" role="status" aria-live="polite"></p>
-    <p class="fine">只存你的 Email、選的手機、語言和登記日期，放在 Cloudflare 上。只用來寄那一封信，寄完就刪除整份名單；不給任何人，也不寄別的東西。隨時可以在上面輸入 Email、按「刪除我的 Email」。</p>
+  <section class="waitlist split" id="waitlist">
+    <div class="side">
+      <h2>想要手機版嗎？</h2>
+      <p>現在只有電腦版。想要的人夠多，就認真考慮做手機版。留下 Email，有消息時（做或不做）寄一封信告訴你。</p>
+    </div>
+    <div class="body">
+      <form id="waitlist-form" method="post" action="/api/waitlist">
+        <input type="hidden" name="lang" value="zh-Hant">
+        <label class="hp" aria-hidden="true">網站<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        <label class="email"><span>Email</span><input type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com"></label>
+        <fieldset class="phones">
+          <legend>你的手機</legend>
+          <label><input type="radio" name="phone" value="ios"> iPhone</label>
+          <label><input type="radio" name="phone" value="android"> Android</label>
+          <label><input type="radio" name="phone" value="either" checked> 都可以</label>
+        </fieldset>
+        <div class="actions">
+          <button class="btn primary" type="submit" name="action" value="join">登記</button>
+          <button class="linklike" type="submit" name="action" value="leave">刪除我的 Email</button>
+        </div>
+      </form>
+      <p class="msg" role="status" aria-live="polite"></p>
+      <p class="fine">只存你的 Email、選的手機、語言和登記日期，放在 Cloudflare 上。只用來寄那一封信，寄完就刪除整份名單；不給任何人，也不寄別的東西。隨時可以在上面輸入 Email、按「刪除我的 Email」。</p>
+    </div>
   </section>
 
-  <section class="faq" id="faq">
-    <h2>常見問題</h2>
-    <details><summary>這是 MLB 官方的嗎？</summary><p>不是。Basesmall 是獨立的球迷專案，跟 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係。比賽資料來自 MLB 公開的 Stats API，由你的電腦直接取得，僅供個人、非商業使用。</p></details>
-    <details><summary>要錢嗎？有廣告嗎？</summary><p>完全免費、開源（Apache License 2.0），沒有廣告，也沒有付費功能。</p></details>
-    <details><summary>會播影片或轉播的聲音嗎？</summary><p>不會。它只用幾顆棋子畫出壘上跑者、球數、出局數、比分、每一球的位置和擊球方向。音效預設關閉，只有幾個可以自己選的短提示音。</p></details>
-    <details><summary>重播會不會爆雷？</summary><p>不會。選場時不顯示比分；重播時球員成績、打線和投手都只算到畫面上那一刻。2023 年以後的比賽都能重播。</p></details>
-    <details><summary>會收集我的資料嗎？</summary><p>程式不會。不用帳號、沒有伺服器、不做分析；它只連 MLB 的比賽資料，以及每次啟動時問 GitHub 一次有沒有新版本（可以在設定關掉）。</p></details>
-    <details><summary>Windows 為什麼說「已保護您的電腦」？</summary><p>因為程式還沒有程式碼簽章，不代表有問題。按「其他資訊」，再按「仍要執行」。原始碼公開在 GitHub，安裝檔由 GitHub 從原始碼自動建置。</p></details>
-    <details><summary>Mac 和 Linux 能用嗎？</summary><p>可以，目前標為實驗性。Mac 版已通過 Apple 簽章與公證，Intel 和 Apple Silicon 共用一個檔案；Linux 有 AppImage 和 .deb。</p></details>
-    <details><summary>怎麼更新？</summary><p>安裝版有新版時，設定按鈕會出現一個小點，到設定按「更新」就會下載、安裝並重開，不按就不會動。免安裝版請下載新的 zip。</p></details>
-    <details><summary>支援其他聯盟嗎？</summary><p>目前只有 MLB，例行賽和季後賽都可以。其他聯盟目前沒有可以使用的公開逐球資料。</p></details>
+  <section class="faq split" id="faq">
+    <div class="side">
+      <h2>常見問題</h2>
+      <p class="aside">找不到答案？到 <a href="https://github.com/Zaious/basesmall/issues">GitHub</a> 問。</p>
+    </div>
+    <div class="body">
+      <details><summary>這是 MLB 官方的嗎？</summary><p>不是。Basesmall 是獨立的球迷專案，跟 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係。比賽資料來自 MLB 公開的 Stats API，由你的電腦直接取得，僅供個人、非商業使用。</p></details>
+      <details><summary>要錢嗎？有廣告嗎？</summary><p>完全免費、開源（Apache License 2.0），沒有廣告，也沒有付費功能。</p></details>
+      <details><summary>會播影片或轉播的聲音嗎？</summary><p>不會。它只用幾顆棋子畫出壘上跑者、球數、出局數、比分、每一球的位置和擊球方向。音效預設關閉，只有幾個可以自己選的短提示音。</p></details>
+      <details><summary>重播會不會爆雷？</summary><p>不會。選場時不顯示比分；重播時球員成績、打線和投手都只算到畫面上那一刻。2023 年以後的比賽都能重播。</p></details>
+      <details><summary>會收集我的資料嗎？</summary><p>程式不會。不用帳號、沒有伺服器、不做分析；它只連 MLB 的比賽資料，以及每次啟動時問 GitHub 一次有沒有新版本（可以在設定關掉）。</p></details>
+      <details><summary>Windows 為什麼說「已保護您的電腦」？</summary><p>因為程式還沒有程式碼簽章，不代表有問題。按「其他資訊」，再按「仍要執行」。原始碼公開在 GitHub，安裝檔由 GitHub 從原始碼自動建置。</p></details>
+      <details><summary>Mac 和 Linux 能用嗎？</summary><p>可以，目前標為實驗性。Mac 版已通過 Apple 簽章與公證，Intel 和 Apple Silicon 共用一個檔案；Linux 有 AppImage 和 .deb。</p></details>
+      <details><summary>怎麼更新？</summary><p>安裝版有新版時，設定按鈕會出現一個小點，到設定按「更新」就會下載、安裝並重開，不按就不會動。免安裝版請下載新的 zip。</p></details>
+      <details><summary>支援其他聯盟嗎？</summary><p>目前只有 MLB，例行賽和季後賽都可以。其他聯盟目前沒有可以使用的公開逐球資料。</p></details>
+    </div>
   </section>
 
-  <section class="privacy">
-    <h2>全部在你自己的電腦上跑。</h2>
-    <p>程式不用帳號、沒有伺服器、沒有廣告、不做分析。比賽資料由你的電腦直接向 MLB 公開的 Stats API 取得；每次啟動時會向 GitHub 問一次有沒有新版本（可以在設定關掉），更新只在你按「更新」時才下載。</p>
+  <section class="privacy split">
+    <div class="side">
+      <h2><span class="phrase">全部在你自己的</span><span class="phrase">電腦上跑。</span></h2>
+    </div>
+    <div class="body">
+      <p>程式不用帳號、沒有伺服器、沒有廣告、不做分析。比賽資料由你的電腦直接向 MLB 公開的 Stats API 取得；每次啟動時會向 GitHub 問一次有沒有新版本（可以在設定關掉），更新只在你按「更新」時才下載。</p>
+    </div>
   </section>
 </main>
 
 <footer>
-  <p>編年史記工作室 <a href="https://studio.chroniclecore.com">ChronicleCore Studio</a> 出品，作者 Zaious。Apache License 2.0 授權。</p>
-  <p>Basesmall 免費。如果它在上班時陪著你，歡迎<a href="https://buymeacoffee.com/zaious">請我喝杯咖啡</a>；贊助不會解鎖任何功能，每個人用到的都一樣。</p>
+  <div class="credits">
+    <p>編年史記工作室 <a href="https://studio.chroniclecore.com">ChronicleCore Studio</a> 出品，作者 Zaious。Apache License 2.0 授權。</p>
+    <p>Basesmall 免費。如果它在上班時陪著你，歡迎<a href="https://buymeacoffee.com/zaious">請我喝杯咖啡</a>；贊助不會解鎖任何功能，每個人用到的都一樣。</p>
+  </div>
   <p class="fine">Basesmall 是獨立的球迷專案，與 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係，也未獲得其認可或贊助。比賽資料屬於 MLB，僅供個人、非商業使用。</p>
 </footer>
 <script src="../site.js" defer></script>
