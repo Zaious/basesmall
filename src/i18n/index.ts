@@ -2,7 +2,7 @@
 // structured events (never from MLB's English description), so both languages read naturally.
 // Player names are not translated.
 
-import type { BatLine, GameEvent, GameStatus, Half, Hand, PitchLine, PitchMark, PlayerCard, Side } from '../model/types.ts';
+import type { BatLine, GameEvent, GameStatus, Half, Hand, PitchLine, PitchMark, PlayerCard, Side, Totals } from '../model/types.ts';
 import type { Series } from '../data/mlb/schedule.ts';
 import type { Tier } from '../render/tiers.ts';
 import type { NotifyKind } from '../settings/schema.ts';
@@ -72,8 +72,17 @@ interface Strings {
     hand(card: PlayerCard, pitcher: boolean): string;
     bat(l: BatLine | undefined): string;
     pitch(l: PitchLine | undefined): string;
-    batTotals(t: NonNullable<PlayerCard['totals']>): string;
-    pitchTotals(t: NonNullable<PlayerCard['totals']>): string;
+    batTotals(t: Totals): string;
+    pitchTotals(t: Totals): string;
+  };
+  /** The lineup window: the batting side's order and the fielding side's pitchers. */
+  lineup: {
+    order(team: string): string;
+    pitchers(team: string): string;
+    today: string;
+    /** Innings pitched from outs, with the unit. */
+    ip(outs: number): string;
+    notPosted: string;
   };
   throws(h: Hand): string;
   feet(n: number): string;
@@ -121,19 +130,22 @@ interface Strings {
     language: string; auto: string;
     tabs: string;
     hoverCard: string;
+    /** The totals line on the player card. */
+    hoverTotals: string; totals: Record<'both' | 'season' | 'postseason' | 'off', string>;
+    infieldEdge: string;
     sound: string; soundOn: string; volume: string; hit: string; homeRun: string; preview: string; soundBlocked: string;
     notify: string; mode: string; modes: Record<'toast' | 'marquee' | 'both' | 'off', string>;
     spot: string; spots: Record<'top' | 'bottom' | 'bar', string>;
     events: string; onlyMine: string;
     replay: string; pace: string; paces: Record<'compact' | 'real' | 'fixed' | 'results', string>; showScores: string;
     about: string; aboutText: string; website: string; source: string; stylesFolder: string;
-    /** Who made it. Plain text: the only link in the app is the source code. */
+    /** Who made it. Plain text: the app links only to the website and the source code. */
     credit: string;
     more: string; strike: string; fullCount: string; bunt: string; strikeout: string;
     after: string;
-    panels: string; panel: Record<'zone' | 'bases' | 'matchup' | 'linescore', string>;
+    panels: string; panel: Record<'zone' | 'bases' | 'matchup' | 'linescore' | 'lineup', string>;
     hotkeys: string; hotkeysOn: string; hide: string; hotkeyBad: string;
-    seriesTab: string;
+    seriesTab: string; elsewhereTab: string;
     newVersion(tag: string): string;
   };
   ui: Record<
@@ -223,8 +235,13 @@ const zh: Strings = {
       : [`今日 ${l.ab} 打數 ${l.h} 安打`, l.hr && `${l.hr} 全壘打`, l.rbi && `${l.rbi} 打點`, l.bb && `${l.bb} 保送`, l.k && `${l.k} 三振`].filter(Boolean).join(' · ')),
     pitch: (l) => (!l || l.pitches === 0 ? '今日還沒投球'
       : [`今日 ${l.pitches} 球`, `${Math.floor(l.outs / 3)}.${l.outs % 3} 局`, `${l.k} 三振`, l.bb && `${l.bb} 保送`, `${l.h} 安打`].filter((x) => x !== 0 && x !== '').join(' · ')),
-    batTotals: (t) => `${t.kind === 'season' ? '本季' : '季後賽'} ` + [t.batting?.avg && `打擊率 ${t.batting.avg}`, t.batting?.hr !== undefined && `${t.batting.hr} 全壘打`, t.batting?.rbi !== undefined && `${t.batting.rbi} 打點`, t.batting?.ops && `OPS ${t.batting.ops}`].filter(Boolean).join(' · '),
-    pitchTotals: (t) => `${t.kind === 'season' ? '本季' : '季後賽'} ` + [t.pitching?.era && `防禦率 ${t.pitching.era}`, t.pitching?.ip && `${t.pitching.ip} 局`, t.pitching?.k !== undefined && `${t.pitching.k} 三振`, t.pitching?.w !== undefined && `${t.pitching.w} 勝 ${t.pitching.l ?? 0} 敗`].filter(Boolean).join(' · '),
+    batTotals: (t) => `${t.kind === 'season' ? '例行賽' : '季後賽'} ` + [t.batting?.avg && `打擊率 ${t.batting.avg}`, t.batting?.hr !== undefined && `${t.batting.hr} 全壘打`, t.batting?.rbi !== undefined && `${t.batting.rbi} 打點`, t.batting?.ops && `OPS ${t.batting.ops}`].filter(Boolean).join(' · '),
+    pitchTotals: (t) => `${t.kind === 'season' ? '例行賽' : '季後賽'} ` + [t.pitching?.era && `防禦率 ${t.pitching.era}`, t.pitching?.ip && `${t.pitching.ip} 局`, t.pitching?.k !== undefined && `${t.pitching.k} 三振`, t.pitching?.w !== undefined && `${t.pitching.w} 勝 ${t.pitching.l ?? 0} 敗`].filter(Boolean).join(' · '),
+  },
+  lineup: {
+    order: (t) => `${t} 打線`, pitchers: (t) => `${t} 投手`, today: '今日',
+    ip: (o) => `${Math.floor(o / 3)}.${o % 3} 局`,
+    notPosted: '打線還沒公布',
   },
   throws: (h) => (h === 'L' ? '左投' : '右投'),
   feet: (n) => `${n} 呎`,
@@ -278,6 +295,8 @@ const zh: Strings = {
     language: '語言', auto: '跟隨系統',
     tabs: '頁籤',
     hoverCard: '滑鼠移到棋子上顯示球員資料',
+    hoverTotals: '累計成績', totals: { both: '兩者', season: '例行賽', postseason: '季後賽', off: '不顯示' },
+    infieldEdge: '畫出內野紅土邊界',
     sound: '音效', soundOn: '開啟音效', volume: '音量', hit: '安打', homeRun: '全壘打', preview: '試聽',
     soundBlocked: '系統還不讓這個視窗發聲，點一下視窗任何地方就好',
     notify: '通知', mode: '方式', modes: { toast: '右下角', marquee: '跑馬燈', both: '兩者', off: '關閉' },
@@ -289,9 +308,9 @@ const zh: Strings = {
     credit: '編年史記工作室 ChronicleCore Studio 出品 · 作者 Zaious',
     more: '更多聲音', strike: '好球', fullCount: '滿球數', bunt: '觸擊', strikeout: '三振',
     after: '主隊淘汰後',
-    panels: '選配視窗', panel: { zone: '好球帶', bases: '壘包', matchup: '投打對決', linescore: '逐局比分' },
+    panels: '選配視窗', panel: { zone: '好球帶', bases: '壘包', matchup: '投打對決', linescore: '逐局比分', lineup: '打線與投手' },
     hotkeys: '熱鍵', hotkeysOn: '開啟熱鍵', hide: '隱藏／顯示', hotkeyBad: '這組按鍵無法使用（格式不對或已被佔用）',
-    seriesTab: '系列賽',
+    seriesTab: '系列賽', elsewhereTab: '另一場的關鍵時刻',
     newVersion: (tag) => `有新版 ${tag}，到下載頁`,
   },
   ui: {
@@ -381,6 +400,11 @@ const en: Strings = {
     batTotals: (t) => `${t.kind === 'season' ? 'Season' : 'Postseason'} ` + [t.batting?.avg, t.batting?.hr !== undefined && `${t.batting.hr} HR`, t.batting?.rbi !== undefined && `${t.batting.rbi} RBI`, t.batting?.ops && `${t.batting.ops} OPS`].filter(Boolean).join(' · '),
     pitchTotals: (t) => `${t.kind === 'season' ? 'Season' : 'Postseason'} ` + [t.pitching?.era && `${t.pitching.era} ERA`, t.pitching?.ip && `${t.pitching.ip} IP`, t.pitching?.k !== undefined && `${t.pitching.k} K`, t.pitching?.w !== undefined && `${t.pitching.w}-${t.pitching.l ?? 0}`].filter(Boolean).join(' · '),
   },
+  lineup: {
+    order: (t) => `${t} lineup`, pitchers: (t) => `${t} pitchers`, today: 'Today',
+    ip: (o) => `${Math.floor(o / 3)}.${o % 3} IP`,
+    notPosted: 'Lineups not posted yet',
+  },
   throws: (h) => (h === 'L' ? 'LHP' : 'RHP'),
   feet: (n) => `${n} ft`,
   tier: { dot: 'Dot', bar: 'Bar', field: 'Field', full: 'Full' },
@@ -431,6 +455,8 @@ const en: Strings = {
     language: 'Language', auto: 'System',
     tabs: 'Tabs',
     hoverCard: 'Player card on hover',
+    hoverTotals: 'Totals', totals: { both: 'Both', season: 'Regular season', postseason: 'Postseason', off: 'None' },
+    infieldEdge: 'Draw the edge of the infield dirt',
     sound: 'Sound', soundOn: 'Sound on', volume: 'Volume', hit: 'Hit', homeRun: 'Home run', preview: 'Play',
     soundBlocked: 'The system wants a click before this window makes sound: click anywhere in it',
     notify: 'Notifications', mode: 'Show as', modes: { toast: 'Corner', marquee: 'Ticker', both: 'Both', off: 'Off' },
@@ -442,9 +468,9 @@ const en: Strings = {
     credit: 'Made by Zaious at ChronicleCore Studio',
     more: 'More sounds', strike: 'Strike', fullCount: 'Full count', bunt: 'Bunt', strikeout: 'Strikeout',
     after: 'When my team is out',
-    panels: 'Extra windows', panel: { zone: 'Strike zone', bases: 'Bases', matchup: 'Matchup', linescore: 'Line score' },
+    panels: 'Extra windows', panel: { zone: 'Strike zone', bases: 'Bases', matchup: 'Matchup', linescore: 'Line score', lineup: 'Lineup & pitchers' },
     hotkeys: 'Hotkeys', hotkeysOn: 'Hotkeys on', hide: 'Hide / show', hotkeyBad: "That key combination can't be used (bad format or already taken)",
-    seriesTab: 'Series',
+    seriesTab: 'Series', elsewhereTab: 'Big moments elsewhere',
     newVersion: (tag) => `${tag} is out: get it`,
   },
   ui: {

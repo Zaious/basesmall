@@ -9,7 +9,7 @@ node_modules/
 dist/
 src-tauri/target/
 src-tauri/gen/
-src-tauri/target-next/
+src-tauri/target-*/
 
 # generated for each release by scripts/third-party-licenses.mjs
 THIRD_PARTY_LICENSES.txt

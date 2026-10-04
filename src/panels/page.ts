@@ -1,4 +1,4 @@
-// The page inside an optional window (panel.html#zone, #bases, #matchup, #linescore). It draws
+// The page inside an optional window (panel.html#zone, #bases, #matchup, #linescore, #lineup). It draws
 // what the main window sends after each step; it never fetches anything itself.
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -7,7 +7,7 @@ import { emit } from '@tauri-apps/api/event';
 import { STRINGS } from '../i18n/index.ts';
 import { FieldRenderer } from '../render/field-svg.ts';
 import { zoneSvg } from '../render/zone.ts';
-import { esc, linescoreView, matchupView, pitchCaption } from '../ui/views.ts';
+import { esc, lineupView, linescoreView, matchupView, pitchCaption } from '../ui/views.ts';
 import { unpackPlan, type PanelFrame } from './frame.ts';
 import type { PanelName } from '../settings/schema.ts';
 
@@ -48,6 +48,7 @@ function draw(f: PanelFrame, fresh: boolean): void {
   if (name === 'zone') drawZone(f, f.pop);
   else if (name === 'matchup') root.innerHTML = `<div class="mu">${matchupView(f.state, f.lang)}</div>`;
   else if (name === 'linescore') root.innerHTML = `<table class="ls">${linescoreView(f.state, f.look.paints)}</table>`;
+  else if (name === 'lineup') root.innerHTML = `<div class="lu">${lineupView(f.state, f.lang)}</div>`;
   else {
     if (!field || fresh) {
       root.innerHTML = '<svg class="field" aria-hidden="true"></svg>';

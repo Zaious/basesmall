@@ -36,7 +36,11 @@ interface Drawn {
 /** Name labels need room: below this piece radius (px) or board height they are left out. */
 const LABEL_MIN_RADIUS = 7, LABEL_MIN_HEIGHT = 90, LABEL_FONT = 9;
 
-export interface Look { style: StyleManifest; background: Background; paints: Record<Side, Paint> }
+export interface Look {
+  style: StyleManifest; background: Background; paints: Record<Side, Paint>;
+  /** Draw where the infield dirt ends (setting infieldEdge; on unless false). */
+  infieldEdge?: boolean;
+}
 
 let instances = 0;
 
@@ -275,12 +279,14 @@ export class FieldRenderer {
     }
     // Where the infield dirt ends. Without it the diamond read as the whole infield, and a popup the
     // second baseman caught on the edge of the grass looked like a ball to the outfield (2026-10-04).
-    const edge: string[] = [];
-    for (let deg = -45; deg <= 45; deg += 3) {
-      const r = this.iso ? compress(infieldEdgeFeet(deg)) : infieldEdgeFeet(deg), a = (deg * Math.PI) / 180;
-      edge.push(P(r * Math.sin(a), r * Math.cos(a)).map((v) => v.toFixed(1)).join(','));
+    if (this.look.infieldEdge !== false) {
+      const edge: string[] = [];
+      for (let deg = -45; deg <= 45; deg += 3) {
+        const r = this.iso ? compress(infieldEdgeFeet(deg)) : infieldEdgeFeet(deg), a = (deg * Math.PI) / 180;
+        edge.push(P(r * Math.sin(a), r * Math.cos(a)).map((v) => v.toFixed(1)).join(','));
+      }
+      el('polyline', { points: edge.join(' '), fill: 'none', stroke: c.foul, 'stroke-width': 1 }, g);
     }
-    el('polyline', { points: edge.join(' '), fill: 'none', stroke: c.foul, 'stroke-width': 1 }, g);
     el('polygon', { points: pts.map((p) => p.join(',')).join(' '), fill: c.boardFill, stroke: c.boardLine, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, g);
     const [mx, my] = P(MOUND[0], MOUND[1]);
     const v = this.iso ? 0.5 : 1;

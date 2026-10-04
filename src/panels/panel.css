@@ -13,6 +13,29 @@
 #panel .who b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 #panel .mu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; align-items: center; }
 #panel.matchup, #panel.linescore { justify-content: center; }
+#panel .lu { display: flex; flex-direction: column; gap: 5px; min-height: 0; font-size: 12px; }
+#panel .lu .pit { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 6px; background: var(--panel); }
+#panel .lu .pit .who { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; height: auto; padding: 0; font-size: 10px; }
+#panel .lu .pit .who b { font-size: 12px; }
+#panel .lu .pit .num { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#panel .lu .pit .num span + span { color: var(--muted); font-size: 10px; }
+#panel .lu .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 5px; padding: 0 4px; font-size: 10px; color: var(--muted); }
+#panel .lu .chain .k { margin-right: 2px; }
+#panel .lu .chain i { font-style: normal; opacity: .6; }
+#panel .lu .chain .cur { color: var(--text); font-weight: 600; }
+#panel .lu .chain .num { font-variant-numeric: tabular-nums; }
+#panel .lu .hd { display: flex; justify-content: space-between; padding: 2px 6px 0; font-size: 10px; color: var(--muted); }
+#panel .lu ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; }
+#panel .lu li { display: grid; grid-template-columns: 16px 24px 1fr auto auto; align-items: center; gap: 6px; height: 22px; padding: 0 6px; border-radius: 5px; color: var(--muted); }
+#panel .lu li .n { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; font-weight: 600; background: var(--panel); }
+#panel .lu li .pos, #panel .lu li .h { font-size: 10px; }
+#panel .lu li .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#panel .lu li .ln { font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#panel .lu li.next { color: var(--text); }
+#panel .lu li.cur { color: var(--text); font-weight: 600; background: var(--panel); }
+#panel .lu li.cur .n { background: var(--accent); color: var(--background); }
+#panel .lu li.cur .h { color: var(--accent); }
+#panel .lu .none { margin: auto; color: var(--muted); font-size: 12px; }
 #close { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 5px; padding: 0; line-height: 16px; color: var(--muted);
   opacity: 0; transition: opacity .15s; z-index: 5; background: color-mix(in srgb, var(--panel) 90%, transparent); }
 body:hover #close { opacity: .8; }

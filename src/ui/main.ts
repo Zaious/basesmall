@@ -19,7 +19,7 @@ import { ScheduleService, SCHEDULE_HYDRATE } from '../data/mlb/schedule-service.
 import { MlbReplaySource } from '../data/replay/mlb-replay-source.ts';
 import type { PaceMode } from '../data/replay/pacing.ts';
 import { GameStore } from '../model/store.ts';
-import type { GameEvent, GameState } from '../model/types.ts';
+import type { GameEvent, GameState, Totals } from '../model/types.ts';
 import { detectLang, eventLine, pitchLine, STRINGS, type Lang } from '../i18n/index.ts';
 import { piecePaints, teamPaint } from '../styles/team-colors.ts';
 import { findStyle, loadStyles, nextStyle } from '../styles/loader.ts';
@@ -36,13 +36,14 @@ import { decide, seasonKey, type Decision } from '../follow/decide.ts';
 import { isBigMoment, mostTense, tension } from '../follow/tension.ts';
 import { Panels } from '../panels/manager.ts';
 import { packPlan, PANEL_SIZE } from '../panels/frame.ts';
-import { FieldRenderer } from '../render/field-svg.ts';
+import { FieldRenderer, type Look } from '../render/field-svg.ts';
 import { AnimationQueue } from '../render/queue.ts';
 import { planStep, sceneOf, type Plan, type Scene } from '../render/scene.ts';
 import { nextTier, partsOf, tierOf, TIER_MIN_WIDTH, TIER_PRESET, type Tier, type TierParts } from '../render/tiers.ts';
 import { frameGaps } from '../render/tween.ts';
 import { zoneSvg } from '../render/zone.ts';
-import { barView, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption, playerCardView } from './views.ts';
+import { barView, cardTotals, dot, dotView, esc, hudView, linescoreView, lowKeyView, matchupView, pitchCaption, playerCardView } from './views.ts';
+import { seasonStatsPath, seasonTotals } from '../data/mlb/season-stats.ts';
 import { adoptView, homeView } from './home.ts';
 import { boardRows } from './scoreboard.ts';
 import { newerRelease } from './version.ts';
@@ -543,9 +544,11 @@ function renderSettings(): void {
         <div class="srow"><span class="k">${esc(S.ui.style)}</span>${seg('style', style.id, styles.map((s) => [s.id, s.name[lang]]))}</div>
         <div class="srow"><span class="k">${esc(T.background)}</span>${seg('background', c.background, (['solid', 'semi', 'clear'] as const).map((b) => [b, T.bg[b]]))}</div>
         <div class="srow"><span class="k">${esc(T.language)}</span>${seg('language', c.language, [['auto', T.auto], ['zh-Hant', '繁體中文'], ['en', 'English']])}</div>
-        <div class="srow"><span class="k">${esc(T.tabs)}</span>${check('tabs.clock', c.tabs.clock, S.ui.clock)}${check('tabs.replay', c.tabs.replay, S.ui.replay)}${check('tabs.series', c.tabs.series, T.seriesTab)}</div>
+        <div class="block"><span class="k">${esc(T.tabs)}</span><div class="chips">${check('tabs.clock', c.tabs.clock, S.ui.clock)}${check('tabs.replay', c.tabs.replay, S.ui.replay)}${check('tabs.series', c.tabs.series, T.seriesTab)}${check('tabs.elsewhere', c.tabs.elsewhere, T.elsewhereTab)}</div></div>
         <div class="srow">${check('lowKey', c.lowKey, S.follow.lowKey)}${check('scoreboard', c.scoreboard, S.follow.scoreboard)}</div>
+        <div class="srow">${check('infieldEdge', c.infieldEdge, T.infieldEdge)}</div>
         <div class="srow">${check('hoverCard', c.hoverCard, T.hoverCard)}</div>
+        <div class="srow${c.hoverCard ? '' : ' off'}"><span class="k">${esc(T.hoverTotals)}</span>${seg('hoverTotals', c.hoverTotals, (['both', 'season', 'postseason', 'off'] as const).map((k) => [k, T.totals[k]]))}</div>
 
         <h3>${esc(T.panels)}</h3>
         <div class="srow">${PANELS.map((p) => check(`panels.${p}`, c.panels[p], T.panel[p])).join('')}</div>
@@ -620,6 +623,8 @@ function onSettings(now: Settings, before: Settings): void {
   if (JSON.stringify(now.hotkeys) !== JSON.stringify(before.hotkeys)) void applyHotkeys();
   if (JSON.stringify(now.panels) !== JSON.stringify(before.panels)) void panels?.sync(now.panels);
   const layout = now.lowKey !== before.lowKey || now.scoreboard !== before.scoreboard;
+  if (now.infieldEdge !== before.infieldEdge && field && shown) field.setLook(look(shown));
+  if (now.tabs.elsewhere !== before.tabs.elsewhere && !now.tabs.elsewhere) elsewhere = null;
   if (layout && (view === 'game' || view === 'home')) void fitWindow(view);
   // Redraw what is on screen.
   if (view === 'settings') renderSettings();
@@ -680,7 +685,7 @@ const queue = new AnimationQueue<Step>(runStep, {
 });
 
 const paintsOf = (s: GameState) => piecePaints(s.teams.away.abbr, s.teams.home.abbr, fav());
-const look = (s: GameState) => ({ style, background: cfg().background, paints: paintsOf(s) });
+const look = (s: GameState): Look => ({ style, background: cfg().background, paints: paintsOf(s), infieldEdge: cfg().infieldEdge });
 /** "代看": a team of the user's is set, and neither side on screen is it. */
 const proxyTag = (s: GameState) => {
   const mine = [fav(), cfg().follow.adopted].filter(Boolean);
@@ -765,7 +770,7 @@ function renderTabs(s: GameState | undefined): void {
     if (tabs.series && card?.series && mode === 'live' && !narrow) {
       items.push(`<span class="tab"><span class="tx">${esc(S.series(card.series, card.gameType, { away: card.away.abbr, home: card.home.abbr }))}</span><button data-close="series" aria-label="×">×</button></span>`);
     }
-    if (elsewhere && !narrow) {
+    if (elsewhere && cfg().tabs.elsewhere && !narrow) {
       const c = elsewhere.card;
       const text = S.follow.elsewhere(S.inning(c.inning ?? 1, c.half ?? 'top'), `${c.away.abbr} ${c.away.runs ?? 0}:${c.home.runs ?? 0} ${c.home.abbr}`);
       items.push(`<span class="tab elsewhere"><button class="go" data-pk="${c.gamePk}" data-mode="live">${esc(text)} ▶</button><button data-close="elsewhere" aria-label="×">×</button></span>`);
@@ -1017,7 +1022,7 @@ function updateWants(): void {
   schedule.want('notices', inTauri && n.mode !== 'off' && !cfg().lowKey && (n.events.run || n.events.game)
     && (!n.onlyMine || (fav() !== undefined && !(watchingLive && followingMine))));
   schedule.want('scoreboard', boardOpen());
-  schedule.want('elsewhere', watchingLive && !cfg().lowKey);
+  schedule.want('elsewhere', watchingLive && !cfg().lowKey && cfg().tabs.elsewhere);
   renderBoard();
 }
 
@@ -1045,7 +1050,7 @@ schedule.subscribe((cards) => {
   }
   noticeBase = new Map(snaps.map((s) => [s.gamePk, s]));
   // Another game's big moment, while watching this one: one tab, never a switch.
-  if (view === 'game' && mode === 'live' && !cfg().lowKey) {
+  if (view === 'game' && mode === 'live' && !cfg().lowKey && cfg().tabs.elsewhere) {
     const mine = cards.find((c) => c.gamePk === following);
     const here = mine ? tension(mine) : 0;
     const best = cards.filter((c) => c.gamePk !== following && isBigMoment(c) && tension(c) > here)
@@ -1181,9 +1186,29 @@ let zoneState: GameState | undefined;
 /** Hides the player card; replaced each time the board is built. Pieces move with every step, so it goes then. */
 let hideCard: () => void = () => undefined;
 
+/** Regular-season totals of a postseason game's players, by game: fetched once, on the first card. */
+const regular = new Map<number, Record<number, Totals> | 'loading'>();
+
+const loaded = (pk: number) => { const r = regular.get(pk); return typeof r === 'object' ? r : undefined; };
+
+/** Fetch a postseason game's regular-season totals, once; `done` runs when they arrive. */
+function loadRegular(s: GameState, done: () => void): void {
+  const want = cfg().hoverTotals;
+  if (!s.postseason || !s.season || regular.has(s.gamePk) || (want !== 'both' && want !== 'season')) return;
+  const ids = Object.keys(s.roster ?? {}).map(Number);
+  if (!ids.length) return;
+  const pk = s.gamePk;
+  regular.set(pk, 'loading');
+  fetchJson(seasonStatsPath(ids, s.season)).then(
+    (j) => { regular.set(pk, seasonTotals(j)); done(); },
+    // Let a later card try again, but not every card in a row.
+    () => setTimeout(() => regular.delete(pk), 60_000),
+  );
+}
+
 /**
  * The player card over a piece under the pointer (setting hoverCard). It reads the state on screen, so
- * today's lines never run ahead of the board; a replay leaves out the league totals.
+ * today's lines never run ahead of the board; cardTotals keeps a replay from showing totals that would spoil it.
  */
 function attachHover(wrap: HTMLElement): void {
   const card = document.createElement('div');
@@ -1191,24 +1216,32 @@ function attachHover(wrap: HTMLElement): void {
   card.hidden = true;
   wrap.append(card);
   let key = '';
-  hideCard = () => { key = ''; card.hidden = true; };
-  wrap.addEventListener('pointerover', (e) => {
-    if (!cfg().hoverCard || !field || !shown) return;
-    const g = (e.target as Element).closest?.('g[data-key]');
-    const k = g?.getAttribute('data-key') ?? '';
-    const piece = k ? field.pieceOf(k) : undefined;
-    if (!g || !piece || k === key) return;
-    key = k;
-    card.innerHTML = playerCardView(piece.id, piece.role === 'pitcher', piece.name ?? '', shown, mode === 'live', lang);
+  let over: Element | null = null;
+  hideCard = () => { key = ''; over = null; card.hidden = true; };
+  const draw = () => {
+    const piece = key && field ? field.pieceOf(key) : undefined;
+    if (!piece || !over || !shown) return;
+    card.innerHTML = playerCardView(piece.id, piece.role === 'pitcher', piece.name ?? '', shown, cardTotals(shown, piece.id, cfg().hoverTotals, mode === 'live', loaded(shown.gamePk)), lang);
     card.hidden = false;
     // Above the piece if it fits, else below; always inside the board.
-    const w = wrap.getBoundingClientRect(), r = g.getBoundingClientRect();
+    const w = wrap.getBoundingClientRect(), r = over.getBoundingClientRect();
     const cw = card.offsetWidth, ch = card.offsetHeight;
     const x = Math.max(2, Math.min(w.width - cw - 2, r.left + r.width / 2 - w.left - cw / 2));
     const above = r.top - w.top - ch - 4;
     const y = above >= 2 ? above : Math.min(w.height - ch - 2, r.bottom - w.top + 4);
     card.style.left = `${Math.round(x)}px`;
     card.style.top = `${Math.round(Math.max(2, y))}px`;
+  };
+  wrap.addEventListener('pointerover', (e) => {
+    if (!cfg().hoverCard || !field || !shown) return;
+    const g = (e.target as Element).closest?.('g[data-key]');
+    const k = g?.getAttribute('data-key') ?? '';
+    if (!g || !k || !field.pieceOf(k) || k === key) return;
+    key = k;
+    over = g;
+    draw();
+    const pk = shown.gamePk;
+    loadRegular(shown, () => { if (key && shown?.gamePk === pk) draw(); });
   });
   wrap.addEventListener('pointerout', (e) => {
     const to = (e.relatedTarget as Element | null)?.closest?.('g[data-key]');

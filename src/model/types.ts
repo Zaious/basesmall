@@ -126,19 +126,28 @@ export interface PlayerCard {
   /** S: switch hitter. */
   bats?: Hand | 'S';
   throws?: Hand;
+  /** Last name, for tight rows. */
+  short?: string;
   /**
    * The league's running totals: the regular season, or in October the postseason. They include this
    * game as far as it has gone, the whole game once it is over: the UI must not show them in a replay.
    */
-  totals?: {
-    kind: 'season' | 'postseason';
-    batting?: { avg?: string; hr?: number; rbi?: number; ops?: string; ab?: number };
-    pitching?: { era?: string; ip?: string; k?: number; w?: number; l?: number };
-  };
+  totals?: Totals;
+}
+
+/** A player's totals over a stretch of games. */
+export interface Totals {
+  kind: 'season' | 'postseason';
+  batting?: { avg?: string; hr?: number; rbi?: number; ops?: string; ab?: number };
+  pitching?: { era?: string; ip?: string; k?: number; w?: number; l?: number };
 }
 
 export interface GameState {
   gamePk: number;
+  /** "2026". */
+  season?: string;
+  /** A postseason game (wild card to World Series). */
+  postseason?: boolean;
   status: GameStatus;
   /** League's own status text, e.g. "Delayed: Rain"; the UI translates the parts it knows. */
   statusDetail?: string;
@@ -170,6 +179,10 @@ export interface GameState {
   /** Today's batting and pitching lines by player id, as of this step. */
   batLines?: Readonly<Record<number, BatLine>>;
   pitchLines?: Readonly<Record<number, PitchLine>>;
+  /** Each side's batting order as of this step, spots 1-9; null where the order is not known yet. */
+  lineups?: Readonly<Record<Side, readonly ({ id: number; pos?: string } | null)[]>>;
+  /** Each side's pitchers who have pitched, in order, as of this step. */
+  pitchers?: Readonly<Record<Side, readonly number[]>>;
 }
 
 /**

@@ -3,7 +3,7 @@ import { buildTimeline } from '../src/data/mlb/timeline.ts';
 import { detectLang, eventLine, LANGS, STRINGS } from '../src/i18n/index.ts';
 import { cssFill, pieceColours, piecePaints, svgFill, teamPaint } from '../src/styles/team-colors.ts';
 import type { GameEvent, GameState } from '../src/model/types.ts';
-import { playerCardView } from '../src/ui/views.ts';
+import { cardTotals, esc, lineupView, playerCardView } from '../src/ui/views.ts';
 import { FIXTURES, hasFixture, loadFixture } from './fixtures.ts';
 
 describe('event text', () => {
@@ -109,27 +109,89 @@ describe('player card', () => {
     pitchLines: { 543037: { pitches: 87, outs: 16, h: 4, bb: 2, k: 6 } },
   } as unknown as GameState;
 
+  const post = [state.roster![669224]!.totals!];
+
   it('a batter: position, hand, today so far, and the postseason line when live', () => {
-    const zh = playerCardView(669224, false, 'Wells', state, true, 'zh-Hant');
+    const zh = playerCardView(669224, false, 'Wells', state, post, 'zh-Hant');
     expect(zh).toContain('Austin Wells');
     expect(zh).toContain('捕手 · 左打');
     expect(zh).toContain('今日 3 打數 1 安打 · 1 保送 · 1 三振');
     expect(zh).toContain('季後賽 打擊率 .444 · 0 全壘打 · 4 打點 · OPS .920');
-    const en = playerCardView(669224, false, 'Wells', state, true, 'en');
+    const en = playerCardView(669224, false, 'Wells', state, post, 'en');
     expect(en).toContain('Today 1-for-3 · 1 BB · 1 K');
     expect(en).toContain('Postseason .444 · 0 HR · 4 RBI · .920 OPS');
   });
 
   it('a pitcher: pitches, innings from outs, and no totals in a replay', () => {
-    const zh = playerCardView(543037, true, 'Cole', state, false, 'zh-Hant');
+    const zh = playerCardView(543037, true, 'Cole', state, [], 'zh-Hant');
     expect(zh).toContain('投手 · 右投');
     expect(zh).toContain('今日 87 球 · 5.1 局 · 6 三振 · 2 保送 · 4 安打');
     expect(zh).not.toContain('季後賽');
-    expect(playerCardView(543037, true, 'Cole', state, true, 'en')).toContain('Postseason 1.80 ERA · 5.0 IP · 5 K · 0-1');
+    expect(playerCardView(543037, true, 'Cole', state, [state.roster![543037]!.totals!], 'en')).toContain('Postseason 1.80 ERA · 5.0 IP · 5 K · 0-1');
   });
 
   it('someone with no plate appearance yet, and a switch hitter', () => {
-    expect(playerCardView(1, false, 'Yet', state, true, 'zh-Hant')).toContain('游擊手 · 左右開弓');
-    expect(playerCardView(1, false, 'Yet', state, true, 'zh-Hant')).toContain('今日還沒打擊');
+    expect(playerCardView(1, false, 'Yet', state, post, 'zh-Hant')).toContain('游擊手 · 左右開弓');
+    expect(playerCardView(1, false, 'Yet', state, post, 'zh-Hant')).toContain('今日還沒打擊');
+  });
+
+  it('both totals, the regular season first', () => {
+    const regular = { kind: 'season', batting: { avg: '.212', hr: 19, rbi: 50, ops: '.700', ab: 400 } } as const;
+    const html = playerCardView(669224, false, 'Wells', state, [regular, ...post], 'zh-Hant');
+    expect(html.indexOf('例行賽 打擊率 .212')).toBeGreaterThan(0);
+    expect(html.indexOf('季後賽 打擊率 .444')).toBeGreaterThan(html.indexOf('例行賽 打擊率 .212'));
+  });
+});
+
+describe('lineup window', () => {
+  it.skipIf(!hasFixture(849841))('the batting order with the batter and on deck marked, and only the pitchers used so far', () => {
+    const feed = loadFixture(849841);
+    const steps = buildTimeline(feed);
+    const box = feed.liveData.boxscore!.teams!;
+    const shortOf = (id: number) => feed.gameData.players![`ID${id}`]!.lastName!;
+    // A step in the middle with the batter in the order.
+    const mid = steps.slice(steps.length >> 1).find((e) => e.state.batter && e.state.lineups?.[e.state.half === 'top' ? 'away' : 'home'].some((x) => x?.id === e.state.batter!.id))!.state;
+    const bat = mid.half === 'top' ? 'away' : 'home', fld = bat === 'away' ? 'home' : 'away';
+    const html = lineupView(mid, 'zh-Hant');
+    const rows = html.split('<li').slice(1);
+    expect(rows).toHaveLength(9);
+    const at = rows.findIndex((r) => r.startsWith(' class="cur"'));
+    expect(rows[at]).toContain(esc(shortOf(mid.batter!.id)));
+    expect(rows[(at + 1) % 9]!.startsWith(' class="next"')).toBe(true);
+    expect(html).toContain(`${mid.teams[bat].abbr} 打線`);
+    // Pitchers so far, in the box score's order; none who came in later.
+    const sofar = mid.pitchers![fld];
+    expect(box[fld].pitchers!.slice(0, sofar.length)).toEqual(sofar);
+    for (const id of box[fld].pitchers!.slice(sofar.length)) expect(html).not.toContain(`>${esc(shortOf(id))} <`);
+    for (const id of sofar) expect(html).toContain(`>${esc(shortOf(id))} <`);
+  });
+
+  it('says so when the lineups are not posted', () => {
+    const empty = { gamePk: 1, status: 'preview', half: 'top', teams: { away: { abbr: 'NYY' }, home: { abbr: 'TB' } } } as unknown as GameState;
+    expect(lineupView(empty, 'en')).toContain('Lineups not posted yet');
+  });
+});
+
+describe('which totals the card shows', () => {
+  const roster = (kind: 'season' | 'postseason') => ({ 7: { totals: { kind, batting: { avg: '.300' } } } });
+  const regular = { 7: { kind: 'season' as const, batting: { avg: '.280' } } };
+  const game = (postseason: boolean) => ({ gamePk: 1, postseason, roster: roster(postseason ? 'postseason' : 'season') }) as unknown as GameState;
+  const avgs = (t: { batting?: { avg?: string } }[]) => t.map((x) => x.batting?.avg);
+
+  it('a regular-season game: the season line live, nothing in a replay (it would include the rest of the game)', () => {
+    expect(avgs(cardTotals(game(false), 7, 'both', true, undefined))).toEqual(['.300']);
+    expect(avgs(cardTotals(game(false), 7, 'season', true, undefined))).toEqual(['.300']);
+    expect(avgs(cardTotals(game(false), 7, 'postseason', true, undefined))).toEqual([]);
+    expect(avgs(cardTotals(game(false), 7, 'both', false, undefined))).toEqual([]);
+  });
+
+  it('a postseason game: the regular season always (it is over), the postseason only live', () => {
+    expect(avgs(cardTotals(game(true), 7, 'both', true, regular))).toEqual(['.280', '.300']);
+    expect(avgs(cardTotals(game(true), 7, 'both', false, regular))).toEqual(['.280']);
+    expect(avgs(cardTotals(game(true), 7, 'season', true, regular))).toEqual(['.280']);
+    expect(avgs(cardTotals(game(true), 7, 'postseason', true, regular))).toEqual(['.300']);
+    expect(avgs(cardTotals(game(true), 7, 'off', true, regular))).toEqual([]);
+    // Not fetched yet: just the postseason.
+    expect(avgs(cardTotals(game(true), 7, 'both', true, undefined))).toEqual(['.300']);
   });
 });

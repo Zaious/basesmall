@@ -41,7 +41,7 @@ Basesmall needs the Microsoft Edge WebView2 Runtime, which Windows 11 includes a
 - **Replays** of games from the 2023 season onward, at a compact pace that keeps the pitch-to-pitch rhythm. Joined a game late? Catch up from the first inning with results only, then carry on live.
 - **Sound, off by default.** Short synthesized sounds for hits and home runs, and a quieter set for strikes, full counts, bunts and strikeouts.
 - **Player cards.** Rest the pointer on a piece for that player's line today so far; in a live game, also the season (or postseason) numbers. Replays leave those out, since they already count the game you are watching.
-- **Optional windows** from the prototype: strike zone, bases, matchup, line score, each on its own.
+- **Optional windows** from the prototype: strike zone, bases, matchup, line score, and the lineup with the pitchers used so far, each on its own.
 - **English and Traditional Chinese.**
 
 ## Using it

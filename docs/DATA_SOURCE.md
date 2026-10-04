@@ -22,6 +22,7 @@
 | 季後賽賽程 | `GET /api/v1/schedule/postseason`、`/schedule/postseason/series` |
 | 賽事類型代碼 | `GET /api/v1/gameTypes` |
 | 球隊清單 | `GET /api/v1/teams?sportId=1` |
+| 球員本季成績（季後賽時球員卡的例行賽數字） | `GET /api/v1/people?personIds=…&hydrate=stats(group=[hitting,pitching],type=[season],season=…,gameType=R)&fields=…`（2026-10-04 已驗證：換過隊的球員有各隊一筆加合計一筆，合計那筆排第一、只有它帶 `numTeams`；`fields` 篩選後一場 52 人從 133,061 位元組降到 12,623） |
 
 備註：
 - 一場九局比賽結束後，`feed/live` 的回應可達四萬行 JSON，包含每個 play 與每顆球。輪詢整包會隨比賽進行越來越大，所以要評估 `diffPatch`。

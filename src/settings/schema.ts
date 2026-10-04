@@ -14,9 +14,11 @@ export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 export type Size = { w: number; h: number };
 /** What to do once the user's team is out for the season (PRD §3.3). */
 export type AfterOut = 'tension' | 'adopt' | 'manual' | 'rest';
-export const PANELS = ['zone', 'bases', 'matchup', 'linescore'] as const;
+export const PANELS = ['zone', 'bases', 'matchup', 'linescore', 'lineup'] as const;
 export type PanelName = (typeof PANELS)[number];
 export const EXTRA_SOUNDS = ['strike', 'fullCount', 'bunt', 'strikeout'] as const;
+/** Which totals the player card shows: the regular season, the postseason, both or neither. */
+export type CardTotals = 'both' | 'season' | 'postseason' | 'off';
 
 export interface Settings {
   version: typeof SETTINGS_VERSION;
@@ -25,7 +27,8 @@ export interface Settings {
   language: Language;
   style: string;
   background: Background;
-  tabs: { clock: boolean; replay: boolean; series: boolean };
+  /** elsewhere: another game's big moment, offered as a tab. */
+  tabs: { clock: boolean; replay: boolean; series: boolean; elsewhere: boolean };
   sound: {
     /** Master switch. Sound starts muted (PRD §6). */
     muted: boolean;
@@ -51,6 +54,9 @@ export interface Settings {
   scoreboard: boolean;
   /** A card with the player's lines when the pointer rests on a piece. */
   hoverCard: boolean;
+  hoverTotals: CardTotals;
+  /** The line where the infield dirt ends, on the board. */
+  infieldEdge: boolean;
   /** Low-key mode: a plain, colourless status strip; no notices or sounds. */
   lowKey: boolean;
   hotkeys: { on: boolean; hide: string; lowKey: string };
@@ -73,16 +79,18 @@ export const DEFAULTS: Settings = {
   language: 'auto',
   style: 'iso',
   background: 'solid',
-  tabs: { clock: true, replay: true, series: true },
+  tabs: { clock: true, replay: true, series: true, elsewhere: true },
   sound: { muted: true, volume: 0.6, hit: true, homeRun: true, strike: false, fullCount: false, bunt: false, strikeout: false },
   replay: { pace: 'compact', showScores: false },
   follow: { after: 'manual', adopted: null, seen: '' },
   scoreboard: false,
   hoverCard: true,
+  hoverTotals: 'both',
+  infieldEdge: true,
   lowKey: false,
   // Three modifiers: two-modifier combinations are often taken (Ctrl+Alt+L reformats code in some editors).
   hotkeys: { on: true, hide: 'CmdOrCtrl+Alt+Shift+B', lowKey: 'CmdOrCtrl+Alt+Shift+L' },
-  panels: { zone: false, bases: false, matchup: false, linescore: false },
+  panels: { zone: false, bases: false, matchup: false, linescore: false, lineup: false },
   notify: {
     mode: 'toast',
     marquee: 'bottom',
@@ -130,7 +138,10 @@ export function normalize(raw: unknown): Settings {
     language: oneOf(o.language, ['auto', 'zh-Hant', 'en'], d.language),
     style: typeof o.style === 'string' && STYLE_ID.test(o.style) ? o.style : d.style,
     background: oneOf(o.background, ['solid', 'semi', 'clear'], d.background),
-    tabs: { clock: bool(tabs.clock, d.tabs.clock), replay: bool(tabs.replay, d.tabs.replay), series: bool(tabs.series, d.tabs.series) },
+    tabs: {
+      clock: bool(tabs.clock, d.tabs.clock), replay: bool(tabs.replay, d.tabs.replay),
+      series: bool(tabs.series, d.tabs.series), elsewhere: bool(tabs.elsewhere, d.tabs.elsewhere),
+    },
     sound: {
       muted: bool(sound.muted, d.sound.muted),
       volume: Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : d.sound.volume,
@@ -149,6 +160,8 @@ export function normalize(raw: unknown): Settings {
     },
     scoreboard: bool(o.scoreboard, d.scoreboard),
     hoverCard: bool(o.hoverCard, d.hoverCard),
+    hoverTotals: oneOf(o.hoverTotals, ['both', 'season', 'postseason', 'off'], d.hoverTotals),
+    infieldEdge: bool(o.infieldEdge, d.infieldEdge),
     lowKey: bool(o.lowKey, d.lowKey),
     hotkeys: { on: bool(hotkeys.on, d.hotkeys.on), hide: combo(hotkeys.hide, d.hotkeys.hide), lowKey: combo(hotkeys.lowKey, d.hotkeys.lowKey) },
     panels: Object.fromEntries(PANELS.map((p) => [p, bool(panels[p], false)])) as Record<PanelName, boolean>,

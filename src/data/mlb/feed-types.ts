@@ -26,6 +26,8 @@ export interface MlbPlayEvent {
   base?: number;
   /** Set on substitutions: who left the game. */
   replacedPlayer?: { id: number };
+  /** Set on substitutions: the batting-order slot taken, "301" = the first change in the 3rd spot. */
+  battingOrder?: string;
   position?: { abbreviation?: string };
   details?: {
     description?: string;
@@ -129,7 +131,7 @@ export interface MlbFeed {
       primaryPosition?: { abbreviation?: string }; batSide?: { code?: string }; pitchHand?: { code?: string };
     }>;
     /** R regular season; F, D, L, W the postseason rounds; S spring training. */
-    game?: { type?: string };
+    game?: { type?: string; season?: string };
     datetime?: { officialDate?: string };
     /** firstPitch is set once the game starts; gameDurationMinutes once it ends (delays excluded). */
     gameInfo?: { firstPitch?: string; gameDurationMinutes?: number };
@@ -139,8 +141,17 @@ export interface MlbFeed {
     /** Only the parts the hover card reads. seasonStats are postseason totals in October. */
     boxscore?: {
       teams?: Record<'away' | 'home', {
+        /** The batting order now (the final one once the game is over): player ids. */
+        battingOrder?: number[];
+        /** Pitchers who have pitched, in order. */
+        pitchers?: number[];
         players?: Record<string, {
+          person?: { id: number };
           position?: { abbreviation?: string };
+          /** "100" ... "900": the starter in that spot; "101": the first change there. */
+          battingOrder?: string;
+          /** Positions played, the first one at the start. */
+          allPositions?: { abbreviation?: string }[];
           seasonStats?: {
             batting?: { avg?: string; homeRuns?: number; rbi?: number; ops?: string; atBats?: number };
             pitching?: { era?: string; inningsPitched?: string; strikeOuts?: number; wins?: number; losses?: number; gamesPlayed?: number };

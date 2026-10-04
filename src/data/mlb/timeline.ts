@@ -53,6 +53,7 @@ export function rosterOf(feed: MlbFeed): Record<number, PlayerCard> {
     const b = box?.away?.players?.[key] ?? box?.home?.players?.[key];
     const card: PlayerCard = {};
     if (p.fullName) card.name = p.fullName;
+    if (p.lastName ?? p.boxscoreName) card.short = p.lastName ?? p.boxscoreName;
     const pos = b?.position?.abbreviation ?? p.primaryPosition?.abbreviation;
     if (pos) card.pos = pos;
     if (p.batSide?.code) card.bats = p.batSide.code === 'S' ? 'S' : hand(p.batSide.code);
@@ -69,10 +70,36 @@ export function rosterOf(feed: MlbFeed): Record<number, PlayerCard> {
   return out;
 }
 
+type Spot = { id: number; pos?: string } | null;
+
+/** The starting batting orders from the box score ("100".."900"), and which side each player is on. */
+function startersOf(feed: MlbFeed): { lineup: Record<Side, Spot[]>; sideOf: Map<number, Side> } {
+  const box = feed.liveData.boxscore?.teams;
+  const sideOf = new Map<number, Side>();
+  const lineup: Record<Side, Spot[]> = { away: Array<Spot>(9).fill(null), home: Array<Spot>(9).fill(null) };
+  for (const side of ['away', 'home'] as const) {
+    for (const p of Object.values(box?.[side]?.players ?? {})) {
+      const id = p.person?.id;
+      if (id === undefined) continue;
+      sideOf.set(id, side);
+      const bo = Number(p.battingOrder ?? '');
+      const pos = p.allPositions?.[0]?.abbreviation;
+      if (bo >= 100 && bo <= 900 && bo % 100 === 0) lineup[side][bo / 100 - 1] = { id, ...(pos ? { pos } : {}) };
+    }
+  }
+  return { lineup, sideOf };
+}
+
 export function initialState(feed: MlbFeed): GameState {
+  const type = feed.gameData.game?.type;
+  const season = feed.gameData.game?.season ?? feed.gameData.datetime?.officialDate?.slice(0, 4);
+  // Before the first pitch the lineups are the posted ones (empty until they are posted).
+  const { lineup } = startersOf(feed);
   return {
     roster: rosterOf(feed),
     gamePk: feed.gamePk,
+    ...(season ? { season } : {}),
+    ...(type ? { postseason: 'FDLW'.includes(type) } : {}),
     status: mapStatus(feed.gameData.status),
     ...(feed.gameData.status.detailedState ? { statusDetail: feed.gameData.status.detailedState } : {}),
     teams: teamsOf(feed),
@@ -87,6 +114,7 @@ export function initialState(feed: MlbFeed): GameState {
     errors: { away: 0, home: 0 },
     linescore: { away: [], home: [] },
     atBat: [],
+    ...(lineup.away.some(Boolean) || lineup.home.some(Boolean) ? { lineups: lineup, pitchers: { away: [], home: [] } } : {}),
     ...(Date.parse(feed.gameData.gameInfo?.firstPitch ?? '') ? { startedAt: Date.parse(feed.gameData.gameInfo!.firstPitch!) } : {}),
   };
 }
@@ -143,7 +171,12 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
   let creditedOuts = 0;
   const zeroBat = (): BatLine => ({ pa: 0, ab: 0, h: 0, hr: 0, rbi: 0, bb: 0, k: 0 });
   const pitcherLine = (id: number) => pitching.get(id) ?? { outs: 0, h: 0, bb: 0, k: 0 };
-  const snapshot = () => ({
+  // Batting orders: the starters, then every change as it happens.
+  const { lineup, sideOf } = startersOf(feed);
+  const pitchersBy: Record<Side, number[]> = { away: [], home: [] };
+  const snapshot = (fielding: Side, pitcher: number) => ({
+    lineups: { away: lineup.away.slice(), home: lineup.home.slice() },
+    pitchers: (() => { if (!pitchersBy[fielding].includes(pitcher)) pitchersBy[fielding].push(pitcher); return { away: pitchersBy.away.slice(), home: pitchersBy.home.slice() }; })(),
     batLines: Object.fromEntries(line),
     pitchLines: Object.fromEntries([...new Set([...pitchCount.keys(), ...pitching.keys()])]
       .map((id) => [id, { ...pitcherLine(id), pitches: pitchCount.get(id) ?? 0 }])),
@@ -192,6 +225,14 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
       const pinchRunner = kind === 'offensive_substitution' && e.player !== undefined && replaced !== undefined
         && [...bases.values()].includes(replaced);
       const baserunning = BASERUNNING_EVENTS.has(kind);
+      // Lineup changes come before the keep test: most of them make no step of their own.
+      // A pitching change can take a spot too ("Iglesias replaces Lee, batting 9th", when the DH is lost).
+      if ((kind === 'offensive_substitution' || kind === 'defensive_substitution' || kind === 'defensive_switch' || kind === 'pitching_substitution') && e.player) {
+        const id = e.player.id, side = sideOf.get(id) ?? (kind === 'offensive_substitution' ? bat : field);
+        const spot = Math.floor(Number(e.battingOrder ?? '') / 100) - 1, pos = e.position?.abbreviation;
+        if (spot >= 0 && spot < 9) lineup[side][spot] = { id, ...(pos ? { pos } : {}) };
+        else if (pos) lineup[side] = lineup[side].map((x) => (x && x.id === id ? { ...x, pos } : x));
+      }
       const keep = e.isPitch || automatic !== undefined || pinchRunner || baserunning
         || kind === 'runner_placed' || kind === 'pitching_substitution' || moves.length > 0 || isLast;
       if (!keep) continue;
@@ -337,7 +378,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           pitcher: { ...ref(pitcherId), hand: hand(play.matchup.pitchHand?.code), pitches: pc },
           atBat: atBat.map((m) => ({ ...m })),
           teams,
-          ...snapshot(),
+          ...snapshot(field, pitcherId),
         },
       });
     }
@@ -368,7 +409,7 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
           pitcher: { ...ref(pitcherId), hand: hand(play.matchup.pitchHand?.code), pitches: pitchCount.get(pitcherId) ?? 0 },
           atBat: [],
           teams,
-          ...snapshot(),
+          ...snapshot(field, pitcherId),
         },
       });
     }

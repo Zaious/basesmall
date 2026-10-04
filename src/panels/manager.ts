@@ -1,9 +1,9 @@
-// Opens, closes, places and feeds the optional windows (the prototype's strike zone, bases, matchup
-// and line score windows). They are all optional: one main window is enough to watch a game.
+// Opens, closes, places and feeds the optional windows (the prototype's strike zone, bases, matchup,
+// line score and lineup windows). They are all optional: one main window is enough to watch a game.
 
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { currentMonitor, getCurrentWindow } from '@tauri-apps/api/window';
 import { PANELS, type PanelName, type Size } from '../settings/schema.ts';
 import { PANEL_SIZE, panelLabel, type PanelFrame } from './frame.ts';
 
@@ -84,13 +84,23 @@ export class Panels {
     const main = getCurrentWindow();
     const scale = await main.scaleFactor();
     const pos = (await main.outerPosition()).toLogical(scale);
-    // A column beside the main window, each below the one before, so none covers another.
-    const above = PANELS.slice(0, PANELS.indexOf(name)).reduce((y, p) => y + this.sizeOf(p).h + 8, 0);
+    // Columns beside the main window, each window below the one before, so none covers another; a
+    // window that would pass the bottom of the screen starts the next column.
+    const mon = await currentMonitor();
+    const bottom = mon ? (mon.position.y + mon.size.height) / mon.scaleFactor : Infinity;
+    let x = pos.x + this.mainWidth() + 8, y = pos.y, colW = 0;
+    for (const p of PANELS) {
+      const s = this.sizeOf(p);
+      if (y > pos.y && y + s.h > bottom) { x += colW + 8; y = pos.y; colW = 0; }
+      if (p === name) break;
+      y += s.h + 8;
+      colW = Math.max(colW, s.w);
+    }
     // Resolve once the window exists (or failed to), so a close right after an open finds it.
     await new Promise<void>((resolve) => {
       const w = new WebviewWindow(panelLabel(name), {
         url: `panel.html#${name}`,
-        x: Math.round(pos.x + this.mainWidth() + 8), y: Math.round(pos.y + above),
+        x: Math.round(x), y: Math.round(y),
         width: size.w, height: size.h, minWidth: 80, minHeight: 36,
         visible: !this.hidden, focus: false, focusable: false,
         decorations: false, transparent: true, shadow: false, resizable: true,

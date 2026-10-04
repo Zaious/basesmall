@@ -11,9 +11,9 @@ The first release.
 - League scoreboard drawer, postseason series labels, a tab for another game's big moment.
 - Notices as corner cards or a ticker, never taking focus. Synthesized sounds, off by default.
 - Low-key mode and hotkeys (Ctrl+Alt+Shift+B to hide, Ctrl+Alt+Shift+L for low-key; ⌥⇧⌘B and ⌥⇧⌘L on macOS).
-- Optional strike zone, bases, matchup and line score windows.
-- A player card when the pointer rests on a piece: today's line so far, and the season or postseason numbers in a live game.
-- Outs on the bases in the same play are told and drawn ("Double to RF, out at 3rd"); the board marks where the infield dirt ends.
+- Optional strike zone, bases, matchup, line score and lineup windows. The lineup window shows the batting side's order with today's lines (the batter and on-deck marked) and the fielding side's pitchers so far.
+- A player card when the pointer rests on a piece: today's line so far; the regular season and postseason totals, your choice of either, both or neither. Totals that would give away a replay stay hidden.
+- Outs on the bases in the same play are told and drawn ("Double to RF, out at 3rd"); the board marks where the infield dirt ends (it can be switched off).
 - A quit button (✕, click twice) in every view.
 - Catch up on a game joined late.
 - English and Traditional Chinese.

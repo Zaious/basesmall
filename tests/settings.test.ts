@@ -48,12 +48,23 @@ describe('settings schema', () => {
   it('M5 settings: safe defaults, and bad values fall back', () => {
     const d = normalize({});
     expect(d.follow).toEqual({ after: 'manual', adopted: null, seen: '' });
-    expect(d.panels).toEqual({ zone: false, bases: false, matchup: false, linescore: false });
+    expect(d.panels).toEqual({ zone: false, bases: false, matchup: false, linescore: false, lineup: false });
     expect(d.hotkeys.hide).toBe('CmdOrCtrl+Alt+Shift+B');
     const bad = normalize({ follow: { after: 'party', adopted: 'x', seen: 'last year' }, hotkeys: { hide: 'Ctrl+<script>' }, panels: { zone: 'yes', bases: true } });
     expect(bad.follow).toEqual({ after: 'manual', adopted: null, seen: '' });
     expect(bad.hotkeys.hide).toBe('CmdOrCtrl+Alt+Shift+B');
-    expect(bad.panels).toEqual({ zone: false, bases: true, matchup: false, linescore: false });
+    expect(bad.panels).toEqual({ zone: false, bases: true, matchup: false, linescore: false, lineup: false });
+  });
+
+  it('the switches added for 0.1.0: on by default, both totals, and bad values fall back', () => {
+    const d = normalize({});
+    expect(d.tabs.elsewhere).toBe(true);
+    expect(d.infieldEdge).toBe(true);
+    expect(d.hoverTotals).toBe('both');
+    const s = normalize({ tabs: { elsewhere: false }, infieldEdge: false, hoverTotals: 'postseason', panels: { lineup: true } });
+    expect([s.tabs.elsewhere, s.infieldEdge, s.hoverTotals, s.panels.lineup]).toEqual([false, false, 'postseason', true]);
+    const bad = normalize({ tabs: { elsewhere: 'no' }, infieldEdge: 0, hoverTotals: 'career' });
+    expect([bad.tabs.elsewhere, bad.infieldEdge, bad.hoverTotals]).toEqual([true, true, 'both']);
   });
 
   it('only accepts a team abbreviation, "none", or no choice yet', () => {

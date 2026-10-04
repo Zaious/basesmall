@@ -226,6 +226,16 @@ describe('player lines', () => {
       }
       expect(wrong).toEqual([]);
     });
+
+    it.skipIf(!hasFixture(pk))(`${pk}: the batting orders and pitchers at the end are the box score's`, () => {
+      const feed = loadFixture(pk) as unknown as { liveData: { boxscore?: { teams?: Record<Side, { battingOrder?: number[]; pitchers?: number[] }> } } };
+      const end = buildTimeline(loadFixture(pk)).at(-1)!.state;
+      for (const side of ['away', 'home'] as const) {
+        const box = feed.liveData.boxscore?.teams?.[side];
+        expect(end.lineups?.[side].map((x) => x?.id ?? null)).toEqual(box?.battingOrder ?? []);
+        expect(end.pitchers?.[side]).toEqual(box?.pitchers ?? []);
+      }
+    });
   }
 });
 

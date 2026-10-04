@@ -1,12 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "panel",
-  "description": "The optional windows (strike zone, bases, matchup, line score) only draw what the main window sends; they can be dragged and resized.",
+  "description": "The optional windows (strike zone, bases, matchup, line score, lineup) only draw what the main window sends; they can be dragged and resized.",
   "windows": [
     "panel-zone",
     "panel-bases",
     "panel-matchup",
-    "panel-linescore"
+    "panel-linescore",
+    "panel-lineup"
   ],
   "permissions": [
     "core:default",
