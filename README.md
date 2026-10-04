@@ -104,7 +104,7 @@ Team colours that look wrong, styles, bug reports and code are all welcome: see 
 - Basesmall is an independent fan project. It is **not affiliated with, endorsed by, or sponsored by** Major League Baseball, MLB Advanced Media, the MLB Players Association, or any team.
 - Game data comes from the MLB Stats API and is fetched directly by your own computer. It is subject to MLB Advanced Media's [copyright notice](http://gdx.mlb.com/components/copyright.txt), which permits individual, non-commercial, non-bulk use. Basesmall does not host, relay or redistribute MLB data. The repository holds no MLB data apart from the two pictures in `docs/media`, which show one game as the app displays it.
 - No team logos, wordmarks, numbers or league marks are used. Teams are shown by name, abbreviation, colour and, for a few teams, a simple pattern such as pinstripes. Team colour values come from [colorr](https://github.com/lobsterbush/colorr) (MIT); see [NOTICE](styles/team-colors/NOTICE.md).
-- Basesmall is free and will stay free: no ads and no paid features.
+- Basesmall is free and will stay free: no ads, no paid features, and no donation links inside the app.
 
 ## Support
 

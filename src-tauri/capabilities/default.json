@@ -24,9 +24,6 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
-        { "url": "https://buymeacoffee.com/zaious" },
-        { "url": "https://studio.chroniclecore.com" },
-        { "url": "https://studio.chroniclecore.com/" },
         { "url": "https://github.com/Zaious/basesmall" },
         { "url": "https://github.com/Zaious/basesmall/*" }
       ]
