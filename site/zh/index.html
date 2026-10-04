@@ -95,27 +95,61 @@
 
   <section class="download" id="download">
     <h2>下載</h2>
+    <p class="note on-phone" hidden>Basesmall 是電腦版的程式。想要手機版的話，<a href="#waitlist">留個 Email</a>。</p>
     <div class="platforms">
-      <div class="platform">
+      <div class="platform" data-os="windows">
         <h3>Windows</h3>
         <p>安裝版不需要系統管理員權限；公司電腦不能裝程式的話，用免安裝的 zip。</p>
+        <div class="files">
+          <a class="btn primary" data-file="_x64-setup.exe" href="https://github.com/Zaious/basesmall/releases/latest">安裝版<span class="size"></span></a>
+          <a class="btn" data-file="_x64_portable.zip" href="https://github.com/Zaious/basesmall/releases/latest">免安裝 zip<span class="size"></span></a>
+        </div>
       </div>
-      <div class="platform">
+      <div class="platform" data-os="mac">
         <h3>macOS</h3>
-        <p>Intel 和 Apple Silicon 共用一個下載檔，已通過 Apple 簽章與公證。比 Windows 版新。</p>
+        <p>Intel 和 Apple Silicon 共用一個檔案，已通過 Apple 簽章與公證。實驗性：在 Intel Mac（macOS 26）上試過。</p>
+        <div class="files">
+          <a class="btn" data-file="_universal.dmg" href="https://github.com/Zaious/basesmall/releases/latest">下載 .dmg<span class="size"></span></a>
+        </div>
       </div>
-      <div class="platform">
+      <div class="platform" data-os="linux">
         <h3>Linux</h3>
         <p>AppImage 或 .deb。自動建置，還沒在實機上試過。</p>
+        <div class="files">
+          <a class="btn" data-file="_amd64.AppImage" href="https://github.com/Zaious/basesmall/releases/latest">AppImage<span class="size"></span></a>
+          <a class="btn" data-file="_amd64.deb" href="https://github.com/Zaious/basesmall/releases/latest">.deb<span class="size"></span></a>
+        </div>
       </div>
     </div>
-    <a class="btn primary" href="https://github.com/Zaious/basesmall/releases/latest">下載</a>
     <p class="note">程式還沒有程式碼簽章，Windows 可能會顯示「Windows 已保護您的電腦」：按「其他資訊」，再按「仍要執行」。需要 WebView2 Runtime，Windows 11 已內建。</p>
+    <p class="note ver" hidden>最新版 <b></b>。所有版本與更新紀錄在 <a href="https://github.com/Zaious/basesmall/releases">GitHub</a>。</p>
+  </section>
+
+  <section class="waitlist" id="waitlist">
+    <h2>想要手機版嗎？</h2>
+    <p>現在只有電腦版。想要的人夠多，就認真考慮做手機版。留下 Email，有消息時（做或不做）寄一封信告訴你。</p>
+    <form id="waitlist-form" method="post" action="/api/waitlist">
+      <input type="hidden" name="lang" value="zh-Hant">
+      <label class="hp" aria-hidden="true">網站<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+      <label class="email"><span>Email</span><input type="email" name="email" required maxlength="254" autocomplete="email" placeholder="you@example.com"></label>
+      <fieldset class="phones">
+        <legend>你的手機</legend>
+        <label><input type="radio" name="phone" value="ios"> iPhone</label>
+        <label><input type="radio" name="phone" value="android"> Android</label>
+        <label><input type="radio" name="phone" value="either" checked> 都可以</label>
+      </fieldset>
+      <div class="actions">
+        <button class="btn primary" type="submit" name="action" value="join">登記</button>
+        <button class="linklike" type="submit" name="action" value="leave">刪除我的 Email</button>
+      </div>
+    </form>
+    <p class="msg" role="status" aria-live="polite"></p>
+    <p class="fine">只存你的 Email、選的手機、語言和登記日期，放在 Cloudflare 上。只用來寄那一封信，寄完就刪除整份名單；不給任何人，也不寄別的東西。隨時可以在上面輸入 Email、按「刪除我的 Email」。</p>
   </section>
 
   <section class="privacy">
     <h2>全部在你自己的電腦上跑。</h2>
-    <p>不用帳號、沒有伺服器、沒有廣告、不做分析。比賽資料由你的電腦直接向 MLB 公開的 Stats API 取得；打開設定時，會向 GitHub 問一次有沒有新版本。</p>
+    <p>程式不用帳號、沒有伺服器、沒有廣告、不做分析。比賽資料由你的電腦直接向 MLB 公開的 Stats API 取得；打開設定時，會向 GitHub 問一次有沒有新版本。</p>
   </section>
 </main>
 
@@ -124,5 +158,6 @@
   <p>Basesmall 免費。如果它在上班時陪著你，歡迎<a href="https://buymeacoffee.com/zaious">請我喝杯咖啡</a>；贊助不會解鎖任何功能，每個人用到的都一樣。</p>
   <p class="fine">Basesmall 是獨立的球迷專案，與 MLB、MLBAM、大聯盟球員工會或任何球隊都沒有關係，也未獲得其認可或贊助。比賽資料屬於 MLB，僅供個人、非商業使用。</p>
 </footer>
+<script src="../site.js" defer></script>
 </body>
 </html>
