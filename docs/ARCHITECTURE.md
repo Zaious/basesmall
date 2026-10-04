@@ -523,7 +523,7 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 - **macOS、Linux**：發布流程一起建置（universal dmg；AppImage 與 deb），標實驗性。Linux 未在實機測試；macOS 在一台 Intel Mac 上測過（見下）。macOS 版用 ad-hoc 簽章（`bundle.macOS.signingIdentity: "-"`）：Apple Silicon 上從網路下載、完全沒簽章的 App 會被說成「已損毀」而且沒有放行的按鈕；ad-hoc 簽章後仍未公證，使用者第一次要到「隱私權與安全性」按「強制打開」。第一次發版的 dmg 裡沒有 `_CodeSignature`，因此補上。維護者的 Developer ID 放在 GitHub Secrets（`APPLE_CERTIFICATE`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_SIGNING_IDENTITY`、`APPLE_ID`、`APPLE_PASSWORD`、`APPLE_TEAM_ID`），有的話發布流程就簽章並公證（PRD §3.2.6）；只傳有值的變數，因為 Tauri 把「有設但是空的」`APPLE_CERTIFICATE` 當成要匯入的憑證而失敗，fork 沒有這些 Secrets 就維持 ad-hoc。第一個簽章版（v0.1.0，2026-10-03）的收據：建置紀錄 `Notarizing Finished with status Accepted`、`Stapling app...`；在 Mac 上 `codesign -dv` 的鏈是 Developer ID Application: Lee MengHan (L3PW92ZK84) → Developer ID Certification Authority → Apple Root CA，hardened runtime，`codesign --verify --deep --strict` 通過，`stapler validate` 通過；標成網路下載後 `spctl` 判 `accepted / source=Notarized Developer ID`。同一版在 Mac 上驗過下面五項修正（連開三次位置不動；從設定頁開的好球帶視窗在主視窗右邊 8 點；全透明時設定頁是實底；設定頁顯示 ⌥⇧⌘B；頁籤縮成「重…」時關閉鈕還在）。p12 用舊式演算法（3DES、SHA1 MAC），這是保守的選擇：用假憑證試做的舊式 p12，在 macOS 26 的 `security import` 實測可以匯入；OpenSSL 3 預設的 AES 版本沒有測。
 - **自動建置**：`.github/workflows/ci.yml` 每次推送跑型別檢查與測試（Linux），並在乾淨的 Windows 機器上照 README 的指令建置。這就是「全新環境照 README 一個指令跑起來」的驗收。`.github/workflows/release.yml` 在推版本標籤時建置三個平台，結果放進一個**草稿**發布，維護者看過按「發布」才公開。
 - **第三方授權**：`scripts/third-party-licenses.mjs` 從 `cargo metadata`（只算一般相依，不含建置與測試用的）與打包進網頁的 npm 套件收集授權全文，相同的文字只印一次，寫成 `THIRD_PARTY_LICENSES.txt`，隨安裝檔與 zip 發布（不進版控，發版時產生）。它只在 `src-tauri/tauri.release.conf.json` 裡列為打包資源：放在主設定的話，Tauri 的 build script 在任何建置（包括 `tauri dev`）都要求檔案存在，乾淨的 clone 照 README 建置會直接失敗（CI 第一次跑就是這樣失敗的）。腳本先 `cargo fetch`，因為授權全文在下載下來的原始碼裡，全新的機器還沒有。Windows 實測：243 個元件、142 種不同的授權文字；6 個套件沒附授權檔，列出宣告的授權與原始碼位置（其中 `selectors` 是 MPL-2.0，原始碼位置即符合它的要求）。
-- **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。
+- **查新版**：設定頁打開時，最多每次執行一次問 GitHub 最新的正式發布，比目前版本新才在「關於」顯示連結；離線、被限流、沒有發布、預發布都安靜不顯示（`src/ui/version.ts`）。CSP 加了 `https://api.github.com`。0.1.1 起改為 App 內更新，見下方「App 內更新」。
 - **文件**：README 重寫（下載、Windows 警告、隱私、使用方式、從原始碼建置）；`CONTRIBUTING.md`（隊色、風格、錯誤回報、程式規則、**如何接其他聯盟**）；`CHANGELOG.md`；issue 範本（隊色、錯誤回報）。
 - **網站**：`site/` 是 basesmall.chroniclecore.com 的靜態頁（中英各一頁、分享預覽圖、sitemap、結構化資料；不載外部字型、不做分析、不放廣告）。跟工作室其他網站一樣放在 Cloudflare Worker（只服務靜態檔），網域與憑證由 Cloudflare 自動建立；部署設定在維護者的私人 repo，公開 repo 只放頁面。App 的「關於」頁連到這裡（與原始碼），贊助與工作室連結只在網站頁尾與 README。
 - **展示**：README 用一場真實比賽（2026 美聯外卡第 2 戰，Bellinger 的三分砲）錄成 GIF，加一張四種尺寸的圖。錄製時在程式後面墊一個純色視窗，避免桌面上其他東西入鏡；每一格都自動檢查邊框外是否只有底色，不合格的整批刪掉重錄（錄製時就抓到兩次：一次底色視窗被其他視窗蓋過，一次底色視窗沒跟著程式變大）。
@@ -571,6 +571,16 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
   - 資料：轉換層從 boxscore 的 `battingOrder`（"100"…"900" 是先發）讀先發打線，再依序套用每一個換人事件（代打、代跑、守備調動、換投；投手換人也可能佔一棒，例如失去指定打擊時），每一步存一份 `lineups`／`pitchers`，所以重播不會先出現之後才上場的人。
   - 驗收：24 場已錄比賽，終場的打線與投手順序逐場對照 boxscore 的 `battingOrder`、`pitchers`，24/24 相符（`tests/timeline.test.ts`）。對照時抓到的錯：換投那一筆帶著 `battingOrder`（Iglesias 接第九棒），原本沒處理。
 - **「另一場」頁籤可關**（`tabs.elsewhere`，預設開）：關掉後也不再為它輪詢賽程。
+
+**App 內更新（0.1.1，2026-10-04，PRD §3.2.6）**：
+
+- 用 Tauri 官方的 updater 外掛。**不會自己裝**：找到新版時，每個設定按鈕上出現一個小點，設定頁「關於」出現「更新到 vX」；按了才下載、驗簽章、安裝、重開。Windows 安裝版只裝給目前使用者，更新不跳系統管理員確認視窗；安裝程式以 passive 模式執行，會自己關掉舊的 App。
+- **何時問**：每次啟動 20 秒後問一次（設定 `updateCheck`，預設開；關掉後只有在設定頁按「檢查更新」才問）。開發與檢查用的啟動參數不問。
+- **誰能自己更新**（`install_kind`，`src-tauri/src/lib.rs`）：Windows 看程式旁邊有沒有 `uninstall.exe`（Tauri 的 NSIS 安裝腳本寫在安裝目錄，免安裝 zip 沒有）；macOS 要在 .app 裡、不是從磁碟映像或系統的隔離路徑（App Translocation）執行；Linux 只有 AppImage。其他情況（免安裝版、.deb、開發版）照舊只顯示「有新版，到下載頁」的連結（`src/ui/updates.ts`）。
+- **簽章**：更新檔用維護者的更新金鑰簽章（跟 Apple 憑證無關），公鑰在 `tauri.conf.json` 的 `plugins.updater.pubkey`，私鑰與密碼只在維護者手上與 GitHub Secrets（`TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`）。私鑰遺失，已安裝的版本就收不到更新，只能手動重裝。
+- **發布流程**：有私鑰時，`release.yml` 多加 `src-tauri/tauri.updater.conf.json`（`createUpdaterArtifacts`），每個平台多一個簽章檔，發布多一個 `latest.json`；已安裝的 App 讀 `releases/latest/download/latest.json`，所以只有按「發布」之後才看得到新版。沒有私鑰（例如 fork）照舊建置，不產生更新檔。
+- **Fork 要注意**：`plugins.updater` 的公鑰與網址指向這個 repo。fork 要改成自己的金鑰與網址（或拿掉），否則它的使用者會被更新成這裡的版本。
+- 0.1.0 沒有這個功能：它的使用者在設定頁看到「有新版」連結，手動下載一次 0.1.1，之後就能在 App 內更新。
 
 ## 8. 風險與待驗證
 

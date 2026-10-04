@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 (2026-10-04)
+
+- In-app updates. When a newer version is out, the settings button shows a dot and Settings offers **Update**: it downloads, checks the signature, installs and restarts, only when you press it. The Windows installer, the macOS app and the Linux AppImage update themselves; the portable zip and the .deb show a link to the download page. The check happens once at start-up and can be switched off. (0.1.0 cannot update itself: get 0.1.1 by hand once.)
+
 ## 0.1.0 (2026-10-04)
 
 The first release.

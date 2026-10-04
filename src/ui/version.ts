@@ -1,5 +1,6 @@
 // Is a release tag newer than the running version? "v0.2.0" vs "0.1.0". Pure.
-// The About section asks GitHub once per session, only when settings are opened (PRD §3.2.6).
+// A portable copy or a .deb finds a newer release this way (src/ui/updates.ts); installed copies use
+// the updater's latest.json instead.
 
 const parse = (v: string) => {
   const m = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(v.trim());

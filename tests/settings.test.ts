@@ -67,6 +67,12 @@ describe('settings schema', () => {
     expect([bad.tabs.elsewhere, bad.infieldEdge, bad.hoverTotals]).toEqual([true, true, 'both']);
   });
 
+  it('asks for a newer version at start-up unless switched off', () => {
+    expect(normalize({}).updateCheck).toBe(true);
+    expect(normalize({ updateCheck: false }).updateCheck).toBe(false);
+    expect(normalize({ updateCheck: 'never' }).updateCheck).toBe(true);
+  });
+
   it('only accepts a team abbreviation, "none", or no choice yet', () => {
     expect(normalize({ favorite: 'none' }).favorite).toBe('none');
     expect(normalize({ favorite: null }).favorite).toBeNull();

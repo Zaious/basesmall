@@ -55,6 +55,8 @@ export interface Settings {
   /** A card with the player's lines when the pointer rests on a piece. */
   hoverCard: boolean;
   hoverTotals: CardTotals;
+  /** Ask GitHub for a newer version once at start-up. Off: only when the user asks, in settings. */
+  updateCheck: boolean;
   /** The line where the infield dirt ends, on the board. */
   infieldEdge: boolean;
   /** Low-key mode: a plain, colourless status strip; no notices or sounds. */
@@ -86,6 +88,7 @@ export const DEFAULTS: Settings = {
   scoreboard: false,
   hoverCard: true,
   hoverTotals: 'both',
+  updateCheck: true,
   infieldEdge: true,
   lowKey: false,
   // Three modifiers: two-modifier combinations are often taken (Ctrl+Alt+L reformats code in some editors).
@@ -161,6 +164,7 @@ export function normalize(raw: unknown): Settings {
     scoreboard: bool(o.scoreboard, d.scoreboard),
     hoverCard: bool(o.hoverCard, d.hoverCard),
     hoverTotals: oneOf(o.hoverTotals, ['both', 'season', 'postseason', 'off'], d.hoverTotals),
+    updateCheck: bool(o.updateCheck, d.updateCheck),
     infieldEdge: bool(o.infieldEdge, d.infieldEdge),
     lowKey: bool(o.lowKey, d.lowKey),
     hotkeys: { on: bool(hotkeys.on, d.hotkeys.on), hide: combo(hotkeys.hide, d.hotkeys.hide), lowKey: combo(hotkeys.lowKey, d.hotkeys.lowKey) },

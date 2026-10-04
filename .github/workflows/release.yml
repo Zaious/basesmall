@@ -1,6 +1,6 @@
 # A version tag (v0.1.0) builds every platform into a DRAFT release: nothing is public until the
 # maintainer reads it and presses Publish. Windows: installer (per user, no admin) and a portable
-# zip. macOS and Linux: experimental builds, unsigned (PRD §3.2.6).
+# zip. macOS (signed and notarized with the maintainer's secrets) and Linux: experimental builds.
 name: Release
 
 on:
@@ -65,16 +65,33 @@ jobs:
           for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
             if [ -n "${!v}" ]; then echo "$v=${!v}" >> "$GITHUB_ENV"; echo "$v: set"; else echo "$v: not set"; fi
           done
+      # In-app updates: with the maintainer's update key, each bundle also gets a signed update file and
+      # the release a latest.json, which installed copies read from the latest release. A fork without
+      # the key builds as before (its copies then only see a link to the download page).
+      - name: Update signing key
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY=$TAURI_SIGNING_PRIVATE_KEY" >> "$GITHUB_ENV"
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "UPDATER_CONFIG=--config src-tauri/tauri.updater.conf.json" >> "$GITHUB_ENV"
+            echo "update key: set"
+          else
+            echo "update key: not set"
+          fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Basesmall ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md. Windows builds are not code-signed; the macOS build is signed and notarized when the maintainer's secrets are set. macOS and Linux are experimental.
+          releaseBody: See CHANGELOG.md. Windows builds are not code-signed; the macOS build is signed and notarized by Apple. macOS and Linux are experimental.
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json
+          args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json ${{ env.UPDATER_CONFIG }}
       - name: Windows portable zip (no install, no admin)
         if: startsWith(matrix.os, 'windows')
         shell: pwsh

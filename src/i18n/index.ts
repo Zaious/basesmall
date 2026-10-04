@@ -147,6 +147,9 @@ interface Strings {
     hotkeys: string; hotkeysOn: string; hide: string; hotkeyBad: string;
     seriesTab: string; elsewhereTab: string;
     newVersion(tag: string): string;
+    /** In-app updates (an installed copy). */
+    updateCheck: string; checkNow: string; checking: string; upToDate: string;
+    updateTo(tag: string): string; downloading(pct: number | null): string; updateFailed: string; whatsNew: string;
   };
   ui: Record<
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' | 'quit' | 'quitAgain' |
@@ -312,6 +315,9 @@ const zh: Strings = {
     hotkeys: '熱鍵', hotkeysOn: '開啟熱鍵', hide: '隱藏／顯示', hotkeyBad: '這組按鍵無法使用（格式不對或已被佔用）',
     seriesTab: '系列賽', elsewhereTab: '另一場的關鍵時刻',
     newVersion: (tag) => `有新版 ${tag}，到下載頁`,
+    updateCheck: '啟動時檢查新版本', checkNow: '檢查更新', checking: '檢查中…', upToDate: '已經是最新版',
+    updateTo: (tag) => `更新到 ${tag}`, downloading: (p) => (p === null ? '下載中…' : p >= 100 ? '安裝中，完成後會自動重開' : `下載中 ${p}%`),
+    updateFailed: '更新沒有完成，可以到下載頁手動更新', whatsNew: '更新內容',
   },
   ui: {
     today: '今日比賽', live: '直播中', later: '稍後', final: '已結束', noGames: '這天沒有比賽', loading: '載入中',
@@ -472,6 +478,9 @@ const en: Strings = {
     hotkeys: 'Hotkeys', hotkeysOn: 'Hotkeys on', hide: 'Hide / show', hotkeyBad: "That key combination can't be used (bad format or already taken)",
     seriesTab: 'Series', elsewhereTab: 'Big moments elsewhere',
     newVersion: (tag) => `${tag} is out: get it`,
+    updateCheck: 'Check for a new version at start-up', checkNow: 'Check for updates', checking: 'Checking…', upToDate: 'You have the latest version',
+    updateTo: (tag) => `Update to ${tag}`, downloading: (p) => (p === null ? 'Downloading…' : p >= 100 ? 'Installing; it will restart' : `Downloading ${p}%`),
+    updateFailed: "The update didn't finish; you can get it from the download page", whatsNew: "What's new",
   },
   ui: {
     today: "Today's games", live: 'Live', later: 'Later', final: 'Final', noGames: 'No games this day', loading: 'Loading',

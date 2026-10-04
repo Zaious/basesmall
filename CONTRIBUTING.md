@@ -47,6 +47,13 @@ Basesmall only covers MLB because, when it was built, no other league had public
 
 The board, the strike zone, sounds and notices then work unchanged: they only know the model. Open an issue before starting, so we can agree on the details.
 
+## Forks and your own builds
+
+The in-app updater trusts this repository's update key and reads this repository's releases
+(`plugins.updater` in `src-tauri/tauri.conf.json`). A fork that ships its own builds should put
+its own key and URL there, or remove the block's endpoint, so its users are not updated to these
+builds. Release builds only produce update files when `TAURI_SIGNING_PRIVATE_KEY` is set.
+
 ## Licence
 
 By contributing you agree that your work is released under the [Apache License 2.0](LICENSE), like the rest of Basesmall.

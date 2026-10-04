@@ -15,8 +15,9 @@ Settings are kept in %APPDATA%\io.github.zaious.basesmall\, and the web view's c
 %LOCALAPPDATA%\io.github.zaious.basesmall\. Delete those two folders and this one to remove
 every trace.
 
-Basesmall only talks to statsapi.mlb.com (game data) and, when you open Settings,
-api.github.com (to tell you about a newer version). It collects nothing.
+Basesmall only talks to statsapi.mlb.com (game data) and, once at start-up (you can switch
+it off in Settings), api.github.com (to tell you about a newer version). It collects nothing.
+This portable copy never updates itself: for a new version, download the new zip.
 
 Unofficial fan project, not affiliated with MLB or any team. Apache License 2.0: LICENSE.txt and NOTICE.txt.
 Source and newer versions: https://github.com/Zaious/basesmall
@@ -37,7 +38,8 @@ Basesmall 打不開時，通常就是少了它。
 設定存在 %APPDATA%\io.github.zaious.basesmall\，網頁元件的快取在 %LOCALAPPDATA%\io.github.zaious.basesmall\。
 刪掉這兩個資料夾和這個資料夾，就不留任何痕跡。
 
-Basesmall 只連 statsapi.mlb.com（比賽資料），以及在你打開設定時連 api.github.com（告訴你有沒有新版）。
+Basesmall 只連 statsapi.mlb.com（比賽資料），以及每次啟動時連一次 api.github.com（告訴你有沒有新版；可以在設定關掉）。
+免安裝版不會自己更新：有新版時，下載新的 zip 即可。
 它不收集任何資料。
 
 非官方的球迷專案，與 MLB 及任何球隊無關。Apache License 2.0 授權：LICENSE.txt 與 NOTICE.txt。

@@ -46,7 +46,7 @@ import { barView, cardTotals, dot, dotView, esc, hudView, linescoreView, lowKeyV
 import { seasonStatsPath, seasonTotals } from '../data/mlb/season-stats.ts';
 import { adoptView, homeView } from './home.ts';
 import { boardRows } from './scoreboard.ts';
-import { newerRelease } from './version.ts';
+import { findNewer, installNewer, type Newer } from './updates.ts';
 import { keyLabel } from './keys.ts';
 import teamTable from '../../styles/team-colors/mlb.json' with { type: 'json' };
 
@@ -493,9 +493,36 @@ async function tensionHome(): Promise<void> {
 let settingsReturn: View = 'picker';
 let appVersion = '';
 let hotkeyError = false;
-/** A newer release, once asked for (at most once a session, when settings open: PRD §3.2.6). */
-let newer: { tag: string; url: string } | null = null;
+/**
+ * A newer release. Asked once at start-up (setting updateCheck), or when the user presses "Check for
+ * updates" in settings. Found: a dot on every settings button, and an Update button in About.
+ */
+let newer: Newer | null = null;
+/** Where the check is: not asked yet, asking, asked and nothing newer. */
+let updateAsk: 'idle' | 'asking' | 'none' = 'idle';
+/** Progress of an update being installed, or why it failed. */
+let updateNote = '';
 let askedForNewer = false;
+
+function askNewer(): void {
+  if (!inTauri || !appVersion || updateAsk === 'asking') return;
+  askedForNewer = true;
+  updateAsk = 'asking';
+  void findNewer(appVersion).then((r) => {
+    newer = r;
+    updateAsk = r ? 'idle' : 'none';
+    document.body.classList.toggle('has-update', !!r);
+    if (view === 'settings') renderSettings();
+  });
+}
+
+function startUpdate(): void {
+  if (!newer?.update || updateNote) return;
+  updateNote = S.set.downloading(null);
+  renderSettings();
+  void installNewer(newer, (pct) => { updateNote = S.set.downloading(pct); if (view === 'settings') renderSettings(); })
+    .catch(() => { updateNote = S.set.updateFailed; if (view === 'settings') renderSettings(); setTimeout(() => { updateNote = ''; }, 10_000); });
+}
 
 function showSettings(): void {
   if (view === 'settings') return;
@@ -506,10 +533,7 @@ function showSettings(): void {
   renderTabs(undefined);
   void fitWindow('settings');
   renderSettings();
-  if (!askedForNewer && appVersion) {
-    askedForNewer = true;
-    void newerRelease(appVersion).then((r) => { newer = r; if (r && view === 'settings') renderSettings(); });
-  }
+  if (!askedForNewer && cfg().updateCheck) askNewer();
 }
 
 function closeSettings(): void {
@@ -577,7 +601,8 @@ function renderSettings(): void {
 
         <h3>${esc(T.about)}</h3>
         <p class="about"><b>Basesmall</b> ${esc(appVersion)} · <i>Baseball, but small.</i><br>${esc(T.aboutText)}</p>
-        ${newer ? `<div class="srow"><button class="link" data-open="${esc(newer.url)}">⬆ ${esc(T.newVersion(newer.tag))}</button></div>` : ''}
+        ${newerRow(T)}
+        <div class="srow">${check('updateCheck', c.updateCheck, T.updateCheck)}${newer ? '' : `<button class="link" data-action="check-update"${updateAsk === 'asking' ? ' disabled' : ''}>${esc(updateAsk === 'asking' ? T.checking : updateAsk === 'none' ? T.upToDate : T.checkNow)}</button>`}</div>
         <p class="about">${esc(T.credit)}</p>
         <div class="srow"><button class="link" data-open="https://basesmall.chroniclecore.com/${lang === 'zh-Hant' ? 'zh/' : ''}">${esc(T.website)}</button><button class="link" data-open="https://github.com/Zaious/basesmall">${esc(T.source)}</button></div>
         ${configFolder ? `<p class="note">${esc(T.stylesFolder)}: <span class="mono">${esc(configFolder)}${configFolder.includes('\\') ? '\\' : '/'}styles</span></p>` : ''}
@@ -586,6 +611,14 @@ function renderSettings(): void {
   const body = app.querySelector('.settings .body');
   if (body) body.scrollTop = scrollTop;
   setTitle(`Basesmall · settings · ${lang} · ${style.id} · ${c.background} · sound ${c.sound.muted ? 'off' : 'on'} · notify ${c.notify.mode} · after ${c.follow.after} · hotkeys ${c.hotkeys.on ? (hotkeyError ? 'error' : 'on') : 'off'}`);
+}
+
+/** The About section's line about a newer version: Update (installed copies) or a link. */
+function newerRow(T: typeof S.set): string {
+  if (!newer) return '';
+  if (!newer.update) return `<div class="srow"><button class="link" data-open="${esc(newer.url)}">⬆ ${esc(T.newVersion(newer.tag))}</button></div>`;
+  return `<div class="srow"><button class="link update" data-action="update"${updateNote ? ' disabled' : ''}>⬆ ${esc(T.updateTo(newer.tag))}</button>`
+    + `${updateNote ? `<span class="note">${esc(updateNote)}</span>` : `<button class="link" data-open="${esc(newer.url)}">${esc(T.whatsNew)}</button>`}</div>`;
 }
 
 /** Set a dotted path like "notify.events.hr" on a settings draft. */
@@ -1337,6 +1370,8 @@ function replayAction(action: string): void {
   if (action === 'replay-tab') { setTab('replay', !cfg().tabs.replay); return; }
   if (action === 'size') { void cycleTier(); return; }
   if (action === 'settings') { showSettings(); return; }
+  if (action === 'check-update') { askNewer(); renderSettings(); return; }
+  if (action === 'update') { startUpdate(); return; }
   if (action === 'quit') { quit(); return; }
   if (action === 'settings-done') { closeSettings(); return; }
   if (action === 'home') { void goHome(); return; }
@@ -1495,5 +1530,7 @@ async function start(): Promise<void> {
   else if (q.has('picker')) void showPicker();
   else void goHome();
   if (q.has('settings')) setTimeout(showSettings, 1500);
+  // One question to GitHub per launch, after the game has had time to load (setting updateCheck).
+  if (cfg().updateCheck && !checking) setTimeout(() => { if (!askedForNewer && cfg().updateCheck) askNewer(); }, 20_000);
 }
 void start();

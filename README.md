@@ -60,7 +60,7 @@ Both can be changed or switched off in settings. Settings live in `settings.json
 Basesmall runs entirely on your computer. No account, no server, no analytics. It talks to two places:
 
 - `statsapi.mlb.com`, for game data, from your own computer.
-- `api.github.com`, once per session and only when you open Settings, to tell you whether a newer version exists. Nothing is downloaded or installed by itself.
+- GitHub, once each time the app starts (switch it off in Settings), to see whether a newer version exists. An update is downloaded and installed only when you press **Update** in Settings; the portable zip only shows a link to the download page.
 
 ## Roadmap
 

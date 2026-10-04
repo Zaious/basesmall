@@ -1,6 +1,6 @@
 {
   "name": "basesmall",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Baseball, but small. Unofficial desktop companion for following live MLB games.",
   "license": "Apache-2.0",
@@ -23,6 +23,8 @@
     "@tauri-apps/api": "^2.12.1",
     "@tauri-apps/plugin-global-shortcut": "^2.4.0",
     "@tauri-apps/plugin-opener": "^2.7.0",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.13.1",
     "@tauri-apps/plugin-window-state": "^2.5.0"
   }
 }

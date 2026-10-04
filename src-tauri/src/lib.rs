@@ -95,17 +95,46 @@ fn user_styles(app: tauri::AppHandle) -> Vec<(String, String)> {
     out
 }
 
+/// How this copy was installed. "installed" (the Windows installer, a macOS app, a Linux AppImage)
+/// can update itself; "portable" (the Windows zip) and "other" (a .deb, a dev build, an app run
+/// from its disk image) only get a link to the download page.
+#[tauri::command]
+fn install_kind() -> &'static str {
+    if cfg!(debug_assertions) {
+        return "other";
+    }
+    let Ok(exe) = std::env::current_exe() else { return "other" };
+    if cfg!(target_os = "windows") {
+        // The installer writes uninstall.exe next to the app (Tauri's NSIS script); the zip has none.
+        let installed = exe.parent().is_some_and(|d| d.join("uninstall.exe").is_file());
+        return if installed { "installed" } else { "portable" };
+    }
+    if cfg!(target_os = "macos") {
+        // Not from the read-only disk image, nor from where macOS runs a downloaded app it moved aside.
+        let path = exe.to_string_lossy();
+        let movable = path.contains(".app/Contents/MacOS/") && !path.starts_with("/Volumes/") && !path.contains("/AppTranslocation/");
+        return if movable { "installed" } else { "other" };
+    }
+    // Linux: only an AppImage can replace itself.
+    if std::env::var_os("APPIMAGE").is_some() { "installed" } else { "other" }
+}
+
 pub fn run() {
+    // Size is per view (chooser, picker, score bar) and handled by the web view.
+    let mut window_state = tauri_plugin_window_state::Builder::default().with_state_flags(StateFlags::POSITION);
+    // A checking run keeps its window positions with its scratch settings, not the user's. The
+    // plugin joins this onto the config dir, and an absolute path replaces it.
+    if let Some(dir) = std::env::var_os("BASESMALL_CONFIG_DIR").filter(|d| !d.is_empty()) {
+        window_state = window_state.with_filename(PathBuf::from(dir).join(".window-state.json").to_string_lossy());
+    }
     tauri::Builder::default()
-        .plugin(
-            tauri_plugin_window_state::Builder::default()
-                // Size is per view (chooser, picker, score bar) and handled by the web view.
-                .with_state_flags(StateFlags::POSITION)
-                .build(),
-        )
+        .plugin(window_state.build())
         .plugin(tauri_plugin_opener::init())
         // Hide / show and low-key mode from anywhere (F9); the web view registers the keys.
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // In-app updates (only when the user presses Update), and the restart after one.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         // Closing the main window quits, notification windows included; otherwise the app would
         // keep running with only a ticker or a card left on screen.
         .on_window_event(|window, event| {
@@ -113,7 +142,7 @@ pub fn run() {
                 window.app_handle().exit(0);
             }
         })
-        .invoke_handler(tauri::generate_handler![launch_args, user_styles, config_info, read_settings, write_settings])
+        .invoke_handler(tauri::generate_handler![launch_args, user_styles, config_info, read_settings, write_settings, install_kind])
         .setup(|app| {
             let toggle = MenuItem::with_id(app, "toggle", "Show / hide", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
