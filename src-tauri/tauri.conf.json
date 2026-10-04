@@ -34,14 +34,15 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "dmg", "appimage", "deb"],
-    "publisher": "Zaious",
-    "copyright": "Copyright (c) 2026 Zaious. MIT License.",
+    "publisher": "ChronicleCore Studio",
+    "copyright": "Copyright 2026 ChronicleCore Studio. Apache License 2.0.",
     "category": "Sports",
     "shortDescription": "Baseball, but small.",
     "longDescription": "An unofficial desktop companion that follows live MLB games as a few quiet, abstract pieces in a corner of your screen.",
     "homepage": "https://github.com/Zaious/basesmall",
     "resources": {
-      "../LICENSE": "LICENSE.txt"
+      "../LICENSE": "LICENSE.txt",
+      "../NOTICE": "NOTICE.txt"
     },
     "windows": {
       "nsis": {

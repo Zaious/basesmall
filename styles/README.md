@@ -69,7 +69,7 @@ Colours are `#RRGGBB`, or `#RRGGBBAA` with alpha.
 - **Less, not more.** Basesmall is for when you cannot watch the game. A style that makes the window look more like a broadcast or a video game is out of scope.
 - **Quiet.** Someone walking past should not think "sports". Saturated, flashing or high-contrast-everywhere styles belong in a fork.
 - **No logos and no team art.** No league or team marks, wordmarks, letters or numbers, and nothing traced from a uniform or a broadcast. Team colours and simple patterns such as pinstripes are fine, and they live in [`team-colors/mlb.json`](team-colors/mlb.json), not in a style.
-- **Your own work.** Only submit colours and designs you made or have the right to share under the MIT license.
+- **Your own work.** Only submit colours and designs you made or have the right to share under the Apache License 2.0.
 
 ## Trying your style in the app
 

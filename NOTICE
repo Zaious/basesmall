@@ -1,0 +1,17 @@
+Basesmall
+Copyright 2026 ChronicleCore Studio (編年史記工作室)
+Created by Zaious.
+https://github.com/Zaious/basesmall
+https://studio.chroniclecore.com
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+A work based on it must carry this notice along, as section 4(d) of the
+licence asks: "Based on Basesmall by Zaious, ChronicleCore Studio".
+
+The name "Basesmall" is not licensed for other works (section 6 of the
+licence). A modified version needs a name of its own.
+
+Basesmall shows game data from MLB's public Stats API, fetched by each user's
+own computer. That data is not part of this product and is not covered by its
+licence. Team colour data comes from colorr (MIT License); see
+styles/team-colors/NOTICE.md.

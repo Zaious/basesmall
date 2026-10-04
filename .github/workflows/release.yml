@@ -86,6 +86,7 @@ jobs:
           New-Item -ItemType Directory $dir | Out-Null
           Copy-Item src-tauri/target/release/basesmall.exe "$dir/Basesmall.exe"
           Copy-Item LICENSE "$dir/LICENSE.txt"
+          Copy-Item NOTICE "$dir/NOTICE.txt"
           Copy-Item THIRD_PARTY_LICENSES.txt "$dir/THIRD_PARTY_LICENSES.txt"
           Copy-Item docs/PORTABLE.txt "$dir/README.txt"
           Compress-Archive -Path $dir -DestinationPath "Basesmall_${v}_x64_portable.zip"

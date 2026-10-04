@@ -2,7 +2,7 @@
 name = "basesmall"
 version = "0.1.0"
 description = "Baseball, but small. Unofficial desktop companion for following live MLB games."
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/Zaious/basesmall"
 edition = "2021"
 rust-version = "1.80"

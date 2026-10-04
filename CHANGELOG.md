@@ -15,3 +15,4 @@ The first release.
 - Catch up on a game joined late.
 - English and Traditional Chinese.
 - Windows installer (per user, no administrator rights) and a portable zip. macOS and Linux builds are experimental; the macOS build is signed and notarized by Apple.
+- Apache License 2.0. Works based on Basesmall carry its NOTICE and use a name of their own.

@@ -2,6 +2,7 @@
   "bundle": {
     "resources": {
       "../LICENSE": "LICENSE.txt",
+      "../NOTICE": "NOTICE.txt",
       "../THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
     }
   }

@@ -49,4 +49,4 @@ The board, the strike zone, sounds and notices then work unchanged: they only kn
 
 ## Licence
 
-By contributing you agree that your work is released under the [MIT licence](LICENSE).
+By contributing you agree that your work is released under the [Apache License 2.0](LICENSE), like the rest of Basesmall.

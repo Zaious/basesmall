@@ -18,7 +18,7 @@ every trace.
 Basesmall only talks to statsapi.mlb.com (game data) and, when you open Settings,
 api.github.com (to tell you about a newer version). It collects nothing.
 
-Unofficial fan project, not affiliated with MLB or any team. MIT licence: LICENSE.txt.
+Unofficial fan project, not affiliated with MLB or any team. Apache License 2.0: LICENSE.txt and NOTICE.txt.
 Source and newer versions: https://github.com/Zaious/basesmall
 
 
@@ -40,5 +40,5 @@ Basesmall 打不開時，通常就是少了它。
 Basesmall 只連 statsapi.mlb.com（比賽資料），以及在你打開設定時連 api.github.com（告訴你有沒有新版）。
 它不收集任何資料。
 
-非官方的球迷專案，與 MLB 及任何球隊無關。MIT 授權：LICENSE.txt。
+非官方的球迷專案，與 MLB 及任何球隊無關。Apache License 2.0 授權：LICENSE.txt 與 NOTICE.txt。
 原始碼與新版本：https://github.com/Zaious/basesmall

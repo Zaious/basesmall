@@ -112,4 +112,10 @@ Basesmall is free and stays free. If it keeps you company at work, you can [buy 
 
 ## License
 
-[MIT](LICENSE), for the code in this repository. MLB data is not covered. Releases include `THIRD_PARTY_LICENSES.txt` with the licences of everything compiled into the app.
+[Apache License 2.0](LICENSE), for the code in this repository. MLB data is not covered. Releases include `THIRD_PARTY_LICENSES.txt` with the licences of everything compiled into the app.
+
+Fork it, change it, ship it: a work based on Basesmall carries the [NOTICE](NOTICE) along ("Based on Basesmall by Zaious, ChronicleCore Studio") and takes a name of its own, because the name Basesmall is not part of the licence.
+
+---
+
+Made by Zaious at [ChronicleCore Studio](https://studio.chroniclecore.com) (編年史記工作室). © 2026 ChronicleCore Studio.

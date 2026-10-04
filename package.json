@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Baseball, but small. Unofficial desktop companion for following live MLB games.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

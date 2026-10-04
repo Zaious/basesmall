@@ -117,6 +117,8 @@ interface Strings {
     events: string; onlyMine: string;
     replay: string; pace: string; paces: Record<'compact' | 'real' | 'fixed' | 'results', string>; showScores: string;
     about: string; aboutText: string; support: string; source: string; stylesFolder: string;
+    /** Who made it, linked to the studio's site. */
+    studio: string; author: string;
     more: string; strike: string; fullCount: string; bunt: string; strikeout: string;
     after: string;
     panels: string; panel: Record<'zone' | 'bases' | 'matchup' | 'linescore', string>;
@@ -254,6 +256,7 @@ const zh: Strings = {
     replay: '重播', pace: '節奏', paces: { compact: '緊湊', real: '原速', fixed: '每球 5 秒', results: '只看結果' }, showScores: '選場時顯示比分',
     about: '關於', aboutText: '非官方的球迷專案，與 MLB、MLBAM、球員工會或任何球隊無關。比賽資料來自 MLB Stats API，由你的電腦直接取得，僅供個人、非商業使用。',
     support: '請我喝杯咖啡', source: '原始碼', stylesFolder: '自訂風格資料夾',
+    studio: '編年史記工作室 ChronicleCore Studio 出品', author: '作者：Zaious',
     more: '更多聲音', strike: '好球', fullCount: '滿球數', bunt: '觸擊', strikeout: '三振',
     after: '主隊淘汰後',
     panels: '選配視窗', panel: { zone: '好球帶', bases: '壘包', matchup: '投打對決', linescore: '逐局比分' },
@@ -390,6 +393,7 @@ const en: Strings = {
     replay: 'Replay', pace: 'Pace', paces: { compact: 'Compact', real: 'Real time', fixed: '5 s a pitch', results: 'Results only' }, showScores: 'Show scores when picking',
     about: 'About', aboutText: 'An unofficial fan project, not affiliated with MLB, MLBAM, the MLBPA or any team. Game data comes from the MLB Stats API, fetched by your own computer, for personal, non-commercial use.',
     support: 'Buy me a coffee', source: 'Source code', stylesFolder: 'Custom styles folder',
+    studio: 'Made at ChronicleCore Studio', author: 'by Zaious',
     more: 'More sounds', strike: 'Strike', fullCount: 'Full count', bunt: 'Bunt', strikeout: 'Strikeout',
     after: 'When my team is out',
     panels: 'Extra windows', panel: { zone: 'Strike zone', bases: 'Bases', matchup: 'Matchup', linescore: 'Line score' },

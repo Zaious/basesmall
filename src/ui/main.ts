@@ -575,6 +575,7 @@ function renderSettings(): void {
         <p class="about"><b>Basesmall</b> ${esc(appVersion)} · <i>Baseball, but small.</i><br>${esc(T.aboutText)}</p>
         ${newer ? `<div class="srow"><button class="link" data-open="${esc(newer.url)}">⬆ ${esc(T.newVersion(newer.tag))}</button></div>` : ''}
         <div class="srow"><button class="link" data-open="https://buymeacoffee.com/zaious">☕ ${esc(T.support)}</button><button class="link" data-open="https://github.com/Zaious/basesmall">${esc(T.source)}</button></div>
+        <div class="srow"><button class="link" data-open="https://studio.chroniclecore.com">${esc(T.studio)}</button><span class="muted">${esc(T.author)}</span></div>
         ${configFolder ? `<p class="note">${esc(T.stylesFolder)}: <span class="mono">${esc(configFolder)}${configFolder.includes('\\') ? '\\' : '/'}styles</span></p>` : ''}
       </div>
     </section>`;

@@ -68,7 +68,7 @@ const rule = '-'.repeat(78);
 const out = [
   'Basesmall: third-party licences',
   '',
-  `Everything below is compiled into, or shipped with, Basesmall for ${target}. Basesmall itself is MIT licensed (see LICENSE).`,
+  `Everything below is compiled into, or shipped with, Basesmall for ${target}. Basesmall itself is licensed under the Apache License 2.0 (see LICENSE and NOTICE).`,
   `${entries.length} components; ${groups.size} distinct licence texts.`,
   '',
 ];
