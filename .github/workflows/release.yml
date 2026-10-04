@@ -19,8 +19,10 @@ jobs:
           - os: windows-latest
             args: --bundles nsis
             rust_targets: ''
+          # app as well as dmg: the update file (.app.tar.gz) is only made from the app bundle; v0.1.1
+          # had --bundles dmg alone and its latest.json had no macOS entry.
           - os: macos-latest
-            args: --target universal-apple-darwin --bundles dmg
+            args: --target universal-apple-darwin --bundles app,dmg
             rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
           - os: ubuntu-22.04
             args: --bundles appimage,deb

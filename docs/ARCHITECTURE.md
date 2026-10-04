@@ -581,6 +581,7 @@ Windows 11 實測（release 版，執行檔 3.13 MB；PowerShell 以 Win32 API �
 - **發布流程**：有私鑰時，`release.yml` 多加 `src-tauri/tauri.updater.conf.json`（`createUpdaterArtifacts`），每個平台多一個簽章檔，發布多一個 `latest.json`；已安裝的 App 讀 `releases/latest/download/latest.json`，所以只有按「發布」之後才看得到新版。沒有私鑰（例如 fork）照舊建置，不產生更新檔。
 - **Fork 要注意**：`plugins.updater` 的公鑰與網址指向這個 repo。fork 要改成自己的金鑰與網址（或拿掉），否則它的使用者會被更新成這裡的版本。
 - 0.1.0 沒有這個功能：它的使用者在設定頁看到「有新版」連結，手動下載一次 0.1.1，之後就能在 App 內更新。
+- 驗收（v0.1.1 發布草稿）：GitHub 上簽章的金鑰與 v0.1.1 內建的公鑰相同（91B2FDC1AC5EE5F7，用 minisign 格式逐一驗 Windows 安裝檔的檔案簽章與全域簽章）；簽章帶 `version:0.1.1`；`latest.json` 的簽章與上傳的 .sig 一致。缺 macOS：工作流程只打包 dmg，Mac 的更新檔只從 app 打包產生，v0.1.1 的 `latest.json` 因此沒有 macOS。已改成 `--bundles app,dmg`，下一版才會產生並驗證；0.1.1 的 Mac 版本身已內建更新功能與公鑰，所以從下一版起照常可以更新。
 
 ## 8. 風險與待驗證
 
