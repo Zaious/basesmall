@@ -22,6 +22,14 @@ export function spotFeet(spot: Spot): [number, number] {
 export const compress = (d: number) => (d <= 130 ? d : 130 + (d - 130) * 0.2);
 /** A generic fence: 330 ft down the lines, 400 ft to centre. Not any real park. */
 export const fenceFeet = (deg: number) => 400 - (70 * Math.min(45, Math.abs(deg))) / 45;
+/**
+ * The edge of the infield dirt, by bearing from home: a 95 ft circle around the pitcher's plate, as the
+ * rule book draws it. About 155 ft out to centre, 128 ft down the lines.
+ */
+export function infieldEdgeFeet(deg: number): number {
+  const uy = Math.cos((deg * Math.PI) / 180), m = MOUND[1], R = 95;
+  return m * uy + Math.sqrt((m * uy) ** 2 - (m * m - R * R));
+}
 
 export interface Projection {
   iso: boolean;

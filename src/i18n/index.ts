@@ -188,7 +188,12 @@ const zh: Strings = {
         default: return '';
       }
     })();
-    return base + rbi;
+    const BASE_ZH = { '1B': '一壘', '2B': '二壘', '3B': '三壘', home: '本壘' } as const;
+    // A double, then out going for third: "右外野二壘安打，衝三壘出局".
+    const outs = (r.outsOnBases ?? []).map((o) => (o.runner.id === r.batter.id
+      ? (o.at ? `，衝${BASE_ZH[o.at]}出局` : '，跑壘出局')
+      : ` · ${o.runner.short} ${o.at ? BASE_ZH[o.at] : '跑壘'}出局`)).join('');
+    return base + outs + rbi;
   },
   baserunning(k) {
     if (k.startsWith('stolen_base')) return k.endsWith('home') ? '盜回本壘' : k.endsWith('3b') ? '盜上三壘' : '盜上二壘';
@@ -327,7 +332,11 @@ const en: Strings = {
         default: return '';
       }
     })();
-    return base + rbi;
+    const BASE_EN = { '1B': '1st', '2B': '2nd', '3B': '3rd', home: 'home' } as const;
+    const outs = (r.outsOnBases ?? []).map((o) => (o.runner.id === r.batter.id
+      ? (o.at ? `, out at ${BASE_EN[o.at]}` : ', out on the bases')
+      : ` · ${o.runner.short} out at ${o.at ? BASE_EN[o.at] : 'a base'}`)).join('');
+    return base + outs + rbi;
   },
   baserunning(k) {
     if (k.startsWith('stolen_base')) return k.endsWith('home') ? 'Steals home' : k.endsWith('3b') ? 'Steals 3rd' : 'Steals 2nd';

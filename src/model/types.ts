@@ -87,13 +87,18 @@ export type GameEvent =
   | { type: 'ballInPlay'; ball: BattedBall }
   /** A runner appears on a base without a play: the extra-innings runner, or a pinch runner (`replaces`). */
   | { type: 'runnerPlaced'; runner: PlayerRef; base: Base; replaces?: PlayerRef }
-  | { type: 'runnerAdvance'; runner: PlayerRef; from: RunnerFrom; to: RunnerTo; cause: string }
+  /** `outAt`: where a runner who is out was put out, when the league says (to: 'out' only). */
+  | { type: 'runnerAdvance'; runner: PlayerRef; from: RunnerFrom; to: RunnerTo; cause: string; outAt?: Base | 'home' }
   | { type: 'scoreChange'; side: Side; runs: number; score: Record<Side, number> }
   /** Stolen base, wild pitch, pickoff and other runner events that happen between pitches. */
   | { type: 'baserunning'; kind: string; runner?: PlayerRef }
   | { type: 'pitchingChange'; side: Side; pitcher: PlayerRef }
   /** End of a plate appearance. `result` is the league's event code; text comes from i18n templates. */
-  | { type: 'plateAppearance'; result: string; rbi: number; batter: PlayerRef; isOut: boolean; ball?: BattedBall }
+  /**
+   * `outsOnBases`: on a hit, walk or error, runners (the batter too) put out on the bases in the same
+   * play, e.g. a double where the batter is thrown out going for third.
+   */
+  | { type: 'plateAppearance'; result: string; rbi: number; batter: PlayerRef; isOut: boolean; ball?: BattedBall; outsOnBases?: { runner: PlayerRef; at?: Base | 'home' }[] }
   | { type: 'gameEnd'; winner: Side | 'tie'; score: Record<Side, number> };
 
 export interface BatterState extends PlayerRef {

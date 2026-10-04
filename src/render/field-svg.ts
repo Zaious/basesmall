@@ -7,7 +7,7 @@ import type { BattedBall, Side } from '../model/types.ts';
 import type { StyleManifest } from '../styles/manifest.ts';
 import { svgFill, visualColour, type Paint } from '../styles/team-colors.ts';
 import { alpha, shade } from './colour.ts';
-import { BASE_PATH, compress, fenceFeet, flight, MOUND, project, spotFeet, toScreen, type Projection } from './geometry.ts';
+import { BASE_PATH, compress, fenceFeet, flight, infieldEdgeFeet, MOUND, project, spotFeet, toScreen, type Projection } from './geometry.ts';
 import { TIMING, type Piece, type Plan, type Scene, type Spot } from './scene.ts';
 import { ease, Tweens } from './tween.ts';
 
@@ -138,6 +138,18 @@ export class FieldRenderer {
         case 'out': {
           const d = this.drawn.get(t.key);
           if (!d) break;
+          if (t.run !== undefined) {
+            // Where the out was made is known: run the bases at running speed, then go down at the bag.
+            const safe = t.run, run = ((safe - t.from) * TIMING.perBase) / s, last = Math.max(1, TIMING.out / s);
+            const down = () => this.tweens.add(last, (u) => {
+              d.spot = safe + (t.toward - safe) * ease(u);
+              this.place(d);
+              this.setOpacity(d, 1 - u * u);
+            }, () => this.remove(t.key), 0);
+            if (safe > t.from) this.tweens.add(Math.max(1, run), (u) => { d.spot = t.from + (safe - t.from) * ease(u); this.place(d); }, down, at);
+            else this.tweens.add(1, () => undefined, down, at);
+            break;
+          }
           this.tweens.add(dur, (u) => {
             d.spot = t.from + (t.toward - t.from) * 0.6 * ease(u);
             this.place(d);
@@ -261,6 +273,14 @@ export class FieldRenderer {
       }
       el('polyline', { points: fence.join(' '), fill: 'none', stroke: c.fence, 'stroke-width': 1.2, 'stroke-dasharray': '4 3' }, g);
     }
+    // Where the infield dirt ends. Without it the diamond read as the whole infield, and a popup the
+    // second baseman caught on the edge of the grass looked like a ball to the outfield (2026-10-04).
+    const edge: string[] = [];
+    for (let deg = -45; deg <= 45; deg += 3) {
+      const r = this.iso ? compress(infieldEdgeFeet(deg)) : infieldEdgeFeet(deg), a = (deg * Math.PI) / 180;
+      edge.push(P(r * Math.sin(a), r * Math.cos(a)).map((v) => v.toFixed(1)).join(','));
+    }
+    el('polyline', { points: edge.join(' '), fill: 'none', stroke: c.foul, 'stroke-width': 1 }, g);
     el('polygon', { points: pts.map((p) => p.join(',')).join(' '), fill: c.boardFill, stroke: c.boardLine, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, g);
     const [mx, my] = P(MOUND[0], MOUND[1]);
     const v = this.iso ? 0.5 : 1;

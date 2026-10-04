@@ -27,6 +27,8 @@ export { mapStatus };
 const BASES: readonly Base[] = ['1B', '2B', '3B'];
 const other = (s: Side): Side => (s === 'away' ? 'home' : 'away');
 const isBase = (b: string | null | undefined): b is Base => b === '1B' || b === '2B' || b === '3B';
+/** Results that are not outs themselves: any out in the same play is news the result does not tell. */
+const SAFE_RESULTS: ReadonlySet<string> = new Set([...HIT_EVENTS, 'walk', 'intent_walk', 'hit_by_pitch', 'field_error', 'catcher_interf']);
 const hand = (code: string | undefined): Hand => (code === 'L' ? 'L' : 'R');
 
 export function teamsOf(feed: MlbFeed): Record<Side, TeamRef> {
@@ -211,11 +213,16 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
         if (end === 'score') runs++;
         else if (isBase(end)) bases.set(end, id);
       }
+      const putOut: { runner: PlayerRef; at?: Base | 'home' }[] = [];
       for (const r of moves) {
         const { start, end, isOut } = r.movement;
         const from: RunnerFrom = isBase(start) ? start : 'batter';
         const to: RunnerTo | undefined = isOut ? 'out' : end === 'score' ? 'home' : isBase(end) ? end : undefined;
-        if (to) events.push({ type: 'runnerAdvance', runner: ref(r.details.runner.id, r.details.runner.fullName), from, to, cause: r.details.eventType ?? kind });
+        const ob = r.movement.outBase;
+        const outAt = isOut ? (isBase(ob) ? ob : ob === '4B' || ob === 'score' ? 'home' as const : undefined) : undefined;
+        const runner = ref(r.details.runner.id, r.details.runner.fullName);
+        if (to) events.push({ type: 'runnerAdvance', runner, from, to, cause: r.details.eventType ?? kind, ...(outAt ? { outAt } : {}) });
+        if (isOut) putOut.push({ runner, ...(outAt ? { at: outAt } : {}) });
         for (const c of r.credits ?? []) if (c.credit.includes('error')) errors[field]++;
       }
 
@@ -240,9 +247,11 @@ export function buildTimeline(feed: MlbFeed): TimelineEntry[] {
         // Pitch-level outs are recorded before the play's outs; the play-level count is after.
         outs = play.count.outs;
         const last = e.isPitch ? battedBall(e) : undefined;
+        // Outs on the bases that the result does not already say (a double, then out going for third).
+        const extraOuts = SAFE_RESULTS.has(result) ? putOut : [];
         events.push({
           type: 'plateAppearance', result, rbi: play.result.rbi ?? 0, batter, isOut: !!play.result.isOut,
-          ...(last ? { ball: last } : {}),
+          ...(last ? { ball: last } : {}), ...(extraOuts.length ? { outsOnBases: extraOuts } : {}),
         });
       }
 

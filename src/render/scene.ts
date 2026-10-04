@@ -55,7 +55,8 @@ export type Track =
   /** Run home, then fade out. `dur` covers both. */
   | { kind: 'score'; key: string; path: number[]; at: number; dur: number }
   /** Put out: drift a little toward `toward`, fading. */
-  | { kind: 'out'; key: string; from: number; toward: number; at: number; dur: number }
+  /** `run`: the base reached safely first, at running speed; then all the way to `toward`, fading. */
+  | { kind: 'out'; key: string; from: number; toward: number; at: number; dur: number; run?: number }
   /** Leave without a play: strikeout batter, stranded runner, replaced runner. */
   | { kind: 'leave'; key: string; at: number; dur: number }
   /** Appear. `flipFrom` shows the piece in that side's colour first and turns it over. */
@@ -79,7 +80,8 @@ export interface Plan {
   mismatches: string[];
 }
 
-interface Path { spots: number[]; out: boolean }
+/** `outAt`: the spot where the runner was put out, when the league says. */
+interface Path { spots: number[]; out: boolean; outAt?: number }
 
 /** Each runner's route in this step, from the runner-advance events, in order. */
 function routes(events: readonly GameEvent[]): Map<number, Path> {
@@ -91,7 +93,7 @@ function routes(events: readonly GameEvent[]): Map<number, Path> {
     out.set(ev.runner.id, r);
     let last = r.spots.at(-1)!;
     if (from > last) { r.spots.push(from); last = from; }
-    if (ev.to === 'out') { r.out = true; continue; }
+    if (ev.to === 'out') { r.out = true; if (ev.outAt) r.outAt = ev.outAt === 'home' ? 4 : BASE_SPOT[ev.outAt]; continue; }
     const target = ev.to === 'home' ? 4 : BASE_SPOT[ev.to];
     for (let s = last + 1; s <= target; s++) r.spots.push(s);
   }
@@ -150,6 +152,13 @@ export function planStep(prevScene: Scene, state: GameState, events: readonly Ga
         if (path[0] !== from) path.unshift(from);
         const run = (4 - from) * TIMING.perBase;
         tracks.push({ kind: 'score', key, path, at: flight, dur: run + TIMING.fade });
+        movesEnd = Math.max(movesEnd, flight + run);
+      } else if (route?.out && route.outAt !== undefined) {
+        // Ran to the last base reached safely, then was put out at the next: run there, go down at the bag.
+        // Without this a batter thrown out going for third faded away between first and second.
+        const safe = Math.max(from, route.spots.at(-1)!);
+        const run = (safe - from) * TIMING.perBase;
+        tracks.push({ kind: 'out', key, from, run: safe, toward: Math.min(3.9, Math.max(safe, route.outAt - 0.1)), at: flight, dur: run + TIMING.out });
         movesEnd = Math.max(movesEnd, flight + run);
       } else if (route?.out) {
         const last = route.spots.at(-1)!;

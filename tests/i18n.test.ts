@@ -51,6 +51,19 @@ describe('event text', () => {
     expect(eventLine(out('popup', '4'), 'en')?.text).toBe('Popout to 2B');
   });
 
+  it('tells an out on the bases that the hit itself does not', () => {
+    // Wells, NYY@TB 2026-10-04: "doubles ... Austin Wells out at 3rd on the throw".
+    const wells = { id: 669224, name: 'Austin Wells', short: 'Wells' }, judge = { id: 592450, name: 'Aaron Judge', short: 'Judge' };
+    const double: GameEvent = { type: 'plateAppearance', result: 'double', rbi: 0, isOut: false, batter: wells,
+      ball: { location: '9', trajectory: 'line_drive' }, outsOnBases: [{ runner: wells, at: '3B' }] };
+    expect(eventLine(double, 'zh-Hant')?.text).toBe('右外野二壘安打，衝三壘出局');
+    expect(eventLine(double, 'en')?.text).toBe('Double to RF, out at 3rd');
+    const single: GameEvent = { type: 'plateAppearance', result: 'single', rbi: 0, isOut: false, batter: wells,
+      ball: { location: '7', trajectory: 'line_drive' }, outsOnBases: [{ runner: judge, at: 'home' }] };
+    expect(eventLine(single, 'zh-Hant')?.text).toBe('左外野一壘安打 · Judge 本壘出局');
+    expect(eventLine(single, 'en')?.text).toBe('Single to LF · Judge out at home');
+  });
+
   it('gives baserunning events a line', () => {
     const ev: GameEvent = { type: 'baserunning', kind: 'stolen_base_3b', runner: { id: 1, name: 'A B', short: 'B' } };
     expect(eventLine(ev, 'zh-Hant')).toEqual({ who: 'B', text: '盜上三壘' });

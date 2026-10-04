@@ -82,6 +82,22 @@ describe('planStep', () => {
     ]));
     expect(settle(prev, plan)).toEqual(plan.end);
   });
+
+  it('a double, then out going for third: runs to second, goes down at third', () => {
+    // Wells, NYY@TB 2026-10-04. Before, the piece faded out between first and second.
+    const prev = sceneOf({ ...BASE, outs: 2 });
+    const plan = planStep(prev, { ...BASE, outs: 3, batter: undefined }, [
+      { type: 'pitch', pitch: { n: 1, call: 'inPlay', callCode: 'X' } },
+      { type: 'ballInPlay', ball: { coordX: 190, coordY: 120, distance: 202, trajectory: 'line_drive' } },
+      { type: 'runnerAdvance', runner: ref(10), from: 'batter', to: '2B', cause: 'double' },
+      { type: 'runnerAdvance', runner: ref(10), from: '2B', to: 'out', cause: 'other_out', outAt: '3B' },
+      { type: 'plateAppearance', result: 'double', rbi: 0, batter: ref(10), isOut: false },
+    ]);
+    const out = plan.tracks.find((t) => t.kind === 'out' && t.key === runnerKey(10));
+    expect(out).toMatchObject({ kind: 'out', from: 0, run: BASE_SPOT['2B'], toward: 2.9 });
+    expect(out!.dur).toBe(2 * TIMING.perBase + TIMING.out);
+    expect(settle(prev, plan).has(runnerKey(10))).toBe(false);
+  });
 });
 
 // The acceptance check for the board: play every recorded game step by step and make sure the

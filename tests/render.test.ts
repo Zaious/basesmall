@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { GameState, PitchMark } from '../src/model/types.ts';
-import { compress, fenceFeet, flight, project, spotFeet, toScreen } from '../src/render/geometry.ts';
+import { compress, fenceFeet, flight, infieldEdgeFeet, project, spotFeet, toScreen } from '../src/render/geometry.ts';
 import { AnimationQueue } from '../src/render/queue.ts';
 import { nextTier, partsOf, tierOf, TIER_MIN_WIDTH, TIER_PRESET, TIERS } from '../src/render/tiers.ts';
 import { zoneSvg } from '../src/render/zone.ts';
@@ -71,6 +71,15 @@ describe('field geometry', () => {
     const lift = iso.air.map((a, i) => iso.ground[i]![1] - a[1]);
     expect(Math.max(...lift)).toBeGreaterThan(5);
     expect(flight({ trajectory: 'ground_ball' }, project(300, 140, true), 300, 140)).toBeNull();
+  });
+
+  it("the infield dirt ends 95 ft around the pitcher's plate: past second base, short of the outfield", () => {
+    expect(infieldEdgeFeet(0)).toBeCloseTo(155.5, 1);
+    expect(infieldEdgeFeet(45)).toBeCloseTo(127.6, 1);
+    expect(infieldEdgeFeet(-45)).toBeCloseTo(infieldEdgeFeet(45), 6);
+    // Walls's popup was caught 168 ft out at 23 degrees: on the grass, just past the dirt.
+    expect(Math.hypot(66, 154)).toBeGreaterThan(infieldEdgeFeet(23));
+    expect(infieldEdgeFeet(23)).toBeGreaterThan(spotFeet(2)[1]);
   });
 
   it('a ball that stays in the park stays under the fence line; one that clears it keeps its arc', () => {
