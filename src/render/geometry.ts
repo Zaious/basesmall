@@ -78,9 +78,29 @@ export function flight(ball: BattedBall, p: Projection, w: number, h: number): F
   fx = (fx / d0) * shown; fy = (fy / d0) * shown;
   const la = ball.launchAngle ?? 10;
   const realApex = ball.trajectory === 'ground_ball' || la < 6 ? 1.5 : Math.max(4, (d * Math.tan((la * Math.PI) / 180)) / 4);
-  const apex = p.iso ? Math.min(realApex * (shown / d) * 1.4, (h * 0.55) / (p.k * 0.8)) : 0;
-  const out: Flight = { air: [], ground: [], clipped: false };
+  let apex = p.iso ? Math.min(realApex * (shown / d) * 1.4, (h * 0.55) / (p.k * 0.8)) : 0;
   const N = 40;
+  // A ball that stays in the park stays under the fence line. Drawn at full height, a 59° popup
+  // caught 168 ft out by the second baseman rose past the dashed fence and read as a deep fly
+  // (NYY@TB, 2026-10-04). Balls that clear the fence keep their arc.
+  if (apex > 0) {
+    const fence = compress(fenceFeet((Math.atan2(fx, fy) * 180) / Math.PI));
+    if (shown < fence) {
+      // Screen lift above home, in feet: the ground path climbs 0.5 per foot of depth, height 0.8.
+      const limit = Math.max(0.5 * fy, 0.5 * (fy / shown) * fence - 6 / p.k);
+      const peak = (a: number) => {
+        let m = 0;
+        for (let i = 0; i <= N; i++) { const t = i / N; m = Math.max(m, 0.5 * fy * t + 0.8 * a * 4 * t * (1 - t)); }
+        return m;
+      };
+      if (peak(apex) > limit) {
+        let lo = 0, hi = apex;
+        for (let j = 0; j < 24; j++) { const mid = (lo + hi) / 2; if (peak(mid) > limit) hi = mid; else lo = mid; }
+        apex = lo;
+      }
+    }
+  }
+  const out: Flight = { air: [], ground: [], clipped: false };
   for (let i = 0; i <= N; i++) {
     const t = i / N;
     const a = toScreen(p, fx * t, fy * t, apex * 4 * t * (1 - t));

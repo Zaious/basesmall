@@ -39,6 +39,18 @@ describe('event text', () => {
     expect(detectLang(undefined)).toBe('en');
   });
 
+  it('says who caught an out in the air, the way a broadcast would', () => {
+    // Walls, NYY@TB 2026-10-04: "pops out to second baseman", 59 degrees, 174 ft.
+    const out = (trajectory: string, location: string): GameEvent => ({ type: 'plateAppearance', result: 'field_out', rbi: 0, isOut: true,
+      batter: { id: 1, name: 'Taylor Walls', short: 'Walls' }, ball: { trajectory, location } });
+    expect(eventLine(out('popup', '4'), 'zh-Hant')?.text).toBe('二壘手接殺內野高飛球');
+    expect(eventLine(out('line_drive', '6'), 'zh-Hant')?.text).toBe('游擊手接殺平飛球');
+    expect(eventLine(out('popup', '2'), 'zh-Hant')?.text).toBe('捕手接殺內野高飛球');
+    expect(eventLine(out('fly_ball', '8'), 'zh-Hant')?.text).toBe('中外野飛球出局');
+    expect(eventLine(out('ground_ball', '5'), 'zh-Hant')?.text).toBe('三壘滾地球出局');
+    expect(eventLine(out('popup', '4'), 'en')?.text).toBe('Popout to 2B');
+  });
+
   it('gives baserunning events a line', () => {
     const ev: GameEvent = { type: 'baserunning', kind: 'stolen_base_3b', runner: { id: 1, name: 'A B', short: 'B' } };
     expect(eventLine(ev, 'zh-Hant')).toEqual({ who: 'B', text: '盜上三壘' });

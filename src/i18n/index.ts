@@ -159,14 +159,18 @@ const zh: Strings = {
     const loc = LOC_ZH[r.ball?.location ?? ''] ?? '';
     const dir = loc && !OUTFIELD.has(r.ball?.location ?? '') ? `${loc}方向` : loc;
     const rbi = r.rbi > 0 && r.result !== 'home_run' ? ` · 打點 ${r.rbi}` : '';
-    const traj: Record<string, string> = { ground_ball: '滾地球', fly_ball: '飛球', line_drive: '平飛球', popup: '內野飛球', bunt_grounder: '觸擊', bunt_popup: '觸擊飛球' };
+    const traj: Record<string, string> = { ground_ball: '滾地球', fly_ball: '飛球', line_drive: '平飛球', popup: '內野高飛球', bunt_grounder: '觸擊', bunt_popup: '觸擊小飛球' };
+    // An infielder catching it in the air: "二壘手接殺內野高飛球", not "二壘內野飛球出局".
+    const infielder = ['1', '2', '3', '4', '5', '6'].includes(r.ball?.location ?? '') && ['popup', 'line_drive', 'fly_ball', 'bunt_popup'].includes(r.ball?.trajectory ?? '');
     const base = (() => {
       switch (r.result) {
         case 'home_run': return loc + (['陽春砲', '陽春砲', '兩分砲', '三分砲', '滿貫砲'][r.rbi] ?? '全壘打');
         case 'single': return `${dir}一壘安打`;
         case 'double': return `${dir}二壘安打`;
         case 'triple': return `${dir}三壘安打`;
-        case 'field_out': return `${loc}${traj[r.ball?.trajectory ?? ''] ?? ''}出局`;
+        case 'field_out': return infielder
+          ? `${loc.endsWith('手') ? loc : `${loc}手`}接殺${traj[r.ball!.trajectory!]}`
+          : `${loc}${traj[r.ball?.trajectory ?? ''] ?? ''}出局`;
         case 'force_out': return `${loc}封殺`;
         case 'grounded_into_double_play': return `${loc}雙殺打`;
         case 'grounded_into_triple_play': case 'triple_play': return '三殺';

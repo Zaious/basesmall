@@ -72,6 +72,29 @@ describe('field geometry', () => {
     expect(Math.max(...lift)).toBeGreaterThan(5);
     expect(flight({ trajectory: 'ground_ball' }, project(300, 140, true), 300, 140)).toBeNull();
   });
+
+  it('a ball that stays in the park stays under the fence line; one that clears it keeps its arc', () => {
+    // How high the drawn ball is above the fence at the landing bearing (positive = above it).
+    const overFence = (ball: { coordX: number; coordY: number }, f: NonNullable<ReturnType<typeof flight>>, p: ReturnType<typeof project>) => {
+      const fx = ball.coordX - 125.42, fy = 198.27 - ball.coordY;
+      const deg = (Math.atan2(fx, fy) * 180) / Math.PI, r = compress(fenceFeet(deg)), a = (deg * Math.PI) / 180;
+      const fenceY = toScreen(p, r * Math.sin(a), r * Math.cos(a))[1];
+      return fenceY - Math.min(...f.air.map((pt) => pt[1]));
+    };
+    for (const [w, h] of [[270, 150], [300, 140], [420, 300]] as const) {
+      const p = project(w, h, true);
+      // Walls's popup, NYY@TB 2026-10-04: caught by the second baseman 168 ft out, 59 degrees.
+      const popup = { coordX: 151.75, coordY: 136.59, distance: 174, trajectory: 'popup', launchAngle: 59 };
+      const f = flight(popup, p, w, h)!;
+      expect(overFence(popup, f, p)).toBeLessThanOrEqual(0);
+      const lift = f.air.map((pt, i) => f.ground[i]![1] - pt[1]);
+      expect(Math.max(...lift)).toBeGreaterThan(5); // still visibly high
+      // A 420 ft home run to centre goes over.
+      const hr = { coordX: 125.42, coordY: 30, distance: 420, trajectory: 'fly_ball', launchAngle: 28 };
+      const g = flight(hr, p, w, h)!;
+      expect(overFence(hr, g, p)).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('AnimationQueue', () => {
