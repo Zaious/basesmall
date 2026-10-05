@@ -707,6 +707,11 @@ let barLine = '';
 let pitchText = '';
 let showPitch = false;
 let bubble: { html: string; hr: boolean; seq: number } | null = null;
+/**
+ * The new pitcher after a pitching change, until the next pitch. The feed is silent while they warm
+ * up, sometimes for minutes, and a board that does not move looked stuck (2026-10-05).
+ */
+let changingTo = '';
 let bubbleSeq = 0;
 let hiddenByKey = false;
 const check = { steps: 0, bad: 0, notices: 0, sounds: 0, frames: 0 };
@@ -719,7 +724,7 @@ const queue = new AnimationQueue<Step>(runStep, {
 
 const paintsOf = (s: GameState) => piecePaints(s.teams.away.abbr, s.teams.home.abbr, fav());
 const look = (s: GameState): Look => ({ style, background: cfg().background, paints: paintsOf(s), infieldEdge: cfg().infieldEdge });
-/** "代看": a team of the user's is set, and neither side on screen is it. */
+/** "非主隊": a team of the user's is set, and neither side on screen is it. */
 const proxyTag = (s: GameState) => {
   const mine = [fav(), cfg().follow.adopted].filter(Boolean);
   return mine.length && !mine.some((t) => t === s.teams.away.abbr || t === s.teams.home.abbr)
@@ -890,7 +895,7 @@ function follow(pk: number, how: 'live' | 'replay', why: FollowMode = 'manual', 
   mode = how;
   followMode = why;
   catchUp = opts.catchUp ? { pk, then } : null;
-  barLine = pitchText = '';
+  barLine = pitchText = changingTo = '';
   showPitch = false;
   bubble = null;
   speed = dev.speed ?? 1;
@@ -923,6 +928,7 @@ const FAR = new Set(['single', 'double', 'triple', 'home_run', 'field_out', 'sac
 /** Update the text lines from what just happened. */
 function applyLines(events: readonly GameEvent[]): void {
   for (const ev of events) {
+    changingTo = ev.type === 'pitchingChange' ? ev.pitcher.short : '';
     if (ev.type === 'pitch') { pitchText = pitchLine(ev.pitch, lang); showPitch = true; bubble = null; continue; }
     const line = eventLine(ev, lang);
     if (!line) continue;
@@ -1301,14 +1307,16 @@ function renderText(opts: { zone?: boolean } = {}): void {
   if (!s || view !== 'game') return;
   if (cfg().lowKey) { app.innerHTML = lowKeyView(s); renderTabs(s); setGameTitle(s); return; }
   const paints = paintsOf(s);
-  const statusText = s.status === 'live' ? '' : S.status(s.status, s.statusDetail);
+  const statusText = s.status !== 'live' ? S.status(s.status, s.statusDetail) : changingTo ? S.changingPitchers(changingTo) : '';
   const conn = mode === 'live' ? live.status(following) : undefined;
   const offline = conn && !conn.connected ? S.ui.reconnecting : '';
   const proxy = proxyTag(s);
   if (tier === 'dot') {
     app.innerHTML = dotView(s, paints, parts);
   } else if (tier === 'bar') {
-    app.innerHTML = barView(s, paints, lang, parts, showPitch ? `<span class="muted">${esc(pitchText)}</span>` : barLine, statusText, offline, proxy);
+    // During a pitching change the status says it all; the "X 換投" line would repeat it.
+    const lastHtml = changingTo && s.status === 'live' ? '' : showPitch ? `<span class="muted">${esc(pitchText)}</span>` : barLine;
+    app.innerHTML = barView(s, paints, lang, parts, lastHtml, statusText, offline, proxy);
   } else {
     app.querySelector('.hud')!.innerHTML = hudView(s, paints, lang, proxy) + (offline ? `<i class="conn" title="${esc(offline)}"></i>` : '');
     // Rows below first: they decide how much height the board and the zone get.
@@ -1332,7 +1340,7 @@ function setGameTitle(s: GameState): void {
   const checkText = dev.selfcheck
     ? ` · check ${check.steps}/${check.bad} · ${frameStats()} · styles ${styles.length} style problems ${styleProblems.length} · notices ${check.notices} sounds ${check.sounds} audio ${sounds.state} · frames-sent ${check.frames} · schedule ${schedule.requests}${elsewhere ? ` · elsewhere ${elsewhere.card.gamePk}` : ''}`
     : '';
-  const modeText = `${followMode}${catchUp ? ' catchup' : ''}${cfg().lowKey ? ' lowkey' : ''}${proxyTag(s) ? ' proxy' : ''}`;
+  const modeText = `${followMode}${catchUp ? ' catchup' : ''}${cfg().lowKey ? ' lowkey' : ''}${proxyTag(s) ? ' proxy' : ''}${changingTo ? ' pchange' : ''}`;
   setTitle(`Basesmall · ${s.gamePk} · ${mode} · ${s.status} · ${s.teams.away.abbr} ${s.score.away}-${s.score.home} ${s.teams.home.abbr} · ${S.inning(s.inning, s.half)} · ${s.balls}-${s.strikes} ${s.outs}out · ${elapsed(s)} · ${cfg().lowKey ? 'lowkey' : tier} · ${style.id} · ${modeText}${checkText}`);
 }
 

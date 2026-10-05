@@ -158,7 +158,7 @@ button.quit.armed, #tabs .controls button.quit.armed { color: var(--strike); whi
 .home .teams-grid .team { height: 24px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; font: 600 12px var(--mono); }
 .home .teams-grid .team:hover { background: var(--panel); }
 
-/* "代看": not the user's team on screen */
+/* "非主隊": neither team on screen is the user's */
 .proxy { margin-left: 6px; padding: 0 5px; border-radius: 4px; font: 500 10px var(--font); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
 
 /* low-key mode: a plain strip, nothing that reads as sports */

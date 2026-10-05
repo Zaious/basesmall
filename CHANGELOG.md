@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- During a pitching change the score bar (or the bubble on the board) says "Pitching change · <new pitcher>" until the next pitch. The feed is silent while the new pitcher warms up, and a board that did not move for minutes looked stuck.
+- The tag for a game without your team now says "Not your team" (in Chinese 非主隊; it used to be 代看, which nobody understood).
+
 ## 0.1.1 (2026-10-04)
 
 - In-app updates. When a newer version is out, the settings button shows a dot and Settings offers **Update**: it downloads, checks the signature, installs and restarts, only when you press it. The Windows installer, the macOS app and the Linux AppImage update themselves; the portable zip and the .deb show a link to the download page. The check happens once at start-up and can be switched off. (0.1.0 cannot update itself: get 0.1.1 by hand once.)

@@ -34,7 +34,7 @@ export function miniDiamond(s: GameState, paint: Paint, size: 'small' | 'normal'
 
 export function scoreHtml(s: GameState, paints: Record<Side, Paint>, withAbbr: boolean, proxy?: { text: string; title: string }): string {
   const ab = (side: Side) => (withAbbr ? `<span class="muted">${esc(s.teams[side].abbr)}</span>` : '');
-  // "代看": the game on screen is not the user's team (PRD §3.3).
+  // "非主隊": neither team on screen is the user's (PRD §3.3).
   const tag = proxy ? `<span class="proxy" title="${esc(proxy.title)}">${esc(proxy.text)}</span>` : '';
   return `${dot(paints.away)}${ab('away')}${s.score.away}<span class="muted">:</span>${s.score.home}${ab('home')}${dot(paints.home)}${tag}`;
 }
@@ -75,7 +75,7 @@ export function barView(s: GameState, paints: Record<Side, Paint>, lang: Lang, p
 /** Field and full tiers: the capsules on the left. */
 export function hudView(s: GameState, paints: Record<Side, Paint>, lang: Lang, proxy?: { text: string; title: string }): string {
   const S = STRINGS[lang];
-  // The score capsule is full; "代看" sits in the inning capsule beside it.
+  // The score capsule is full; "非主隊" sits in the inning capsule beside it.
   const tag = proxy ? `<span class="proxy" title="${esc(proxy.title)}">${esc(proxy.text)}</span>` : '';
   return `
       <div class="cap score">${scoreHtml(s, paints, true)}</div>

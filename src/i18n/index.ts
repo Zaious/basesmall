@@ -62,6 +62,8 @@ interface Strings {
   result(pa: PA): string;
   baserunning(kind: string): string;
   pitchingChange: string;
+  /** A pitching change, until the next pitch (the new pitcher warms up meanwhile). */
+  changingPitchers(pitcher: string): string;
   automaticBall: string;
   automaticStrike: string;
   /** "Right-handed batter" in a few characters. */
@@ -228,6 +230,7 @@ const zh: Strings = {
     return { wild_pitch: '暴投', passed_ball: '捕逸', balk: '投手犯規', forced_balk: '投手犯規', defensive_indiff: '無防守盜壘', error: '失誤進壘' }[k] ?? '';
   },
   pitchingChange: '換投',
+  changingPitchers: (p) => `換投中 · ${p}`,
   automaticBall: '自動壞球',
   automaticStrike: '自動好球',
   bats: (h) => (h === 'L' ? '左打' : '右打'),
@@ -285,7 +288,7 @@ const zh: Strings = {
     afterTitle: '接下來要怎麼看？',
     after: { tension: '每天自動跟最緊張的一場', adopt: '季後賽期間暫時支持一隊', manual: '我自己挑（打開計分板）', rest: '先休息，明年開季再叫我' },
     adoptPick: '季後賽期間支持哪一隊？',
-    proxy: '代看', proxyTitle: '畫面上不是你的主隊',
+    proxy: '非主隊', proxyTitle: '畫面上這場沒有你的主隊',
     elsewhere: (inning, score) => `另一場 ${inning} · ${score}`,
     catchUp: '從頭快轉', catchingUp: '快轉中',
     lowKey: '低調模式',
@@ -393,6 +396,7 @@ const en: Strings = {
     return { wild_pitch: 'Wild pitch', passed_ball: 'Passed ball', balk: 'Balk', forced_balk: 'Balk', defensive_indiff: 'Defensive indifference', error: 'Advances on error' }[k] ?? '';
   },
   pitchingChange: 'Pitching change',
+  changingPitchers: (p) => `Pitching change · ${p}`,
   automaticBall: 'Automatic ball',
   automaticStrike: 'Automatic strike',
   bats: (h) => (h === 'L' ? 'LHB' : 'RHB'),
@@ -448,7 +452,7 @@ const en: Strings = {
     afterTitle: 'What now?',
     after: { tension: 'Follow the most tense game each day', adopt: 'Adopt a team for the postseason', manual: "I'll pick (open the scoreboard)", rest: 'Rest until next season' },
     adoptPick: 'Which team for the postseason?',
-    proxy: 'Guest', proxyTitle: 'Not your team on screen',
+    proxy: 'Not your team', proxyTitle: 'Neither team on screen is yours',
     elsewhere: (inning, score) => `Elsewhere: ${inning} · ${score}`,
     catchUp: 'Catch up', catchingUp: 'Catching up',
     lowKey: 'Low-key',
