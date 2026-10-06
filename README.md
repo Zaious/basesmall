@@ -119,4 +119,4 @@ Fork it, change it, ship it: a work based on Basesmall carries the [NOTICE](NOTI
 
 ---
 
-Made by Zaious at ChronicleCore Stduio 編年史記工作室. © 2026 ChronicleCore Studio.
+Made by [Zaious](https://zaious.dev/) at ChronicleCore Studio 編年史記工作室. © 2026 ChronicleCore Studio.
