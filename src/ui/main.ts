@@ -18,6 +18,7 @@ import { cardOf, isLive, type GameCard, type MlbScheduleGame } from '../data/mlb
 import { ScheduleService, SCHEDULE_HYDRATE } from '../data/mlb/schedule-service.ts';
 import { MlbReplaySource } from '../data/replay/mlb-replay-source.ts';
 import type { PaceMode } from '../data/replay/pacing.ts';
+import { halfInnings, playHalfInning } from '../data/replay/innings.ts';
 import { GameStore } from '../model/store.ts';
 import type { GameEvent, GameState, Totals } from '../model/types.ts';
 import { detectLang, eventLine, pitchLine, STRINGS, type Lang } from '../i18n/index.ts';
@@ -685,6 +686,13 @@ let followMode: FollowMode = 'manual';
 let following = 0;
 let speed = 1;
 const SPEEDS = [1, 2, 4, 8];
+/**
+ * Single half-inning replay: the inning menu is open; the half being played (its "▲3" label),
+ * whether it has finished, and how to cancel it. The menu lists innings 1 to 9, and extra innings
+ * only once the replay has reached them, so it never tells whether the game went long.
+ */
+let innMenu = false;
+let single: { label: string; done: boolean; missing: boolean; stop: () => void } | null = null;
 /** Dev aid (--seek=<entry> [--paused]): jump a replay to an entry once it has loaded. */
 let pendingSeek: { index: number; pause: boolean } | null = null;
 /** Catching up on a game joined late: its plate appearances from the first inning, then live. */
@@ -801,7 +809,7 @@ function renderTabs(s: GameState | undefined): void {
     if (catchUp) items.push(`<span class="tab accent">⏩ ${esc(S.follow.catchingUp)}</span>`);
     else if (tabs.replay && mode === 'replay' && !narrow) {
       const date = dates.get(s.gamePk);
-      items.push(`<span class="tab accent"><span class="tx">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}</span><button data-close="replay" aria-label="×">×</button></span>`);
+      items.push(`<span class="tab accent"><span class="tx">${esc(S.ui.replay)}${date ? ` · ${shortDate(date)}` : ''}${speed > 1 ? ` · ${speed}×` : ''}${single ? ` · ${single.label}${single.done ? ` ${single.missing ? S.ui.halfMissing : S.ui.halfDone}` : ''}` : ''}</span><button data-close="replay" aria-label="×">×</button></span>`);
     }
     const card = cardsByPk.get(s.gamePk);
     // The series standing in a replay would spoil the game's result: live only.
@@ -814,10 +822,18 @@ function renderTabs(s: GameState | undefined): void {
       items.push(`<span class="tab elsewhere"><button class="go" data-pk="${c.gamePk}" data-mode="live">${esc(text)} ▶</button><button data-close="elsewhere" aria-label="×">×</button></span>`);
     }
   }
-  tabsEl.innerHTML = game ? `${items.join('')}<span class="grow"></span>${controls()}` : '';
+  tabsEl.innerHTML = game ? `${items.join('')}<span class="grow"></span>${controls()}${innMenu && mode === 'replay' && s ? inningMenu(s) : ''}` : '';
   document.body.classList.toggle('has-tabs', game);
   document.body.classList.toggle('has-board', boardOpen());
   void panels?.setHidden(view !== 'game' || cfg().lowKey || hiddenByKey);
+}
+
+/** The grid of half-innings under the tabs: a column per inning, ▲ above ▼. */
+function inningMenu(s: GameState): string {
+  const n = Math.max(9, s.inning);
+  const cell = (i: number, half: 'top' | 'bottom') => `<button data-action="inning" data-value="${i}:${half}" title="${half === 'top' ? '▲' : '▼'}${i}">${half === 'top' ? '▲' : '▼'}</button>`;
+  const cols = Array.from({ length: n }, (_, k) => `<span>${k + 1}</span>${cell(k + 1, 'top')}${cell(k + 1, 'bottom')}`).join('');
+  return `<div class="innmenu" title="${esc(S.ui.inningsTitle)}">${cols}</div>`;
 }
 
 function setTab(k: 'clock' | 'replay' | 'series', on: boolean): void {
@@ -852,6 +868,7 @@ function controls(): string {
     : '';
   const replayMore = mode === 'replay' && !narrow
     ? `<button data-action="speed" title="${esc(S.ui.speed)}">${speed}×</button><button data-action="next" title="${esc(S.ui.nextResult)}">⏭</button>`
+      + `<button data-action="innings" aria-pressed="${innMenu}" title="${esc(S.ui.inningsTitle)}">${esc(S.ui.innings)}</button>`
     : '';
   // Joined a game already under way: offer to catch up from the first inning.
   const inProgress = mode === 'live' && shown?.status === 'live' && (shown.inning > 1 || shown.half === 'bottom');
@@ -898,6 +915,9 @@ function follow(pk: number, how: 'live' | 'replay', why: FollowMode = 'manual', 
   barLine = pitchText = changingTo = '';
   showPitch = false;
   bubble = null;
+  innMenu = false;
+  single?.stop();
+  single = null;
   speed = dev.speed ?? 1;
   scene = new Map();
   shown = undefined;
@@ -1340,7 +1360,7 @@ function setGameTitle(s: GameState): void {
   const checkText = dev.selfcheck
     ? ` · check ${check.steps}/${check.bad} · ${frameStats()} · styles ${styles.length} style problems ${styleProblems.length} · notices ${check.notices} sounds ${check.sounds} audio ${sounds.state} · frames-sent ${check.frames} · schedule ${schedule.requests}${elsewhere ? ` · elsewhere ${elsewhere.card.gamePk}` : ''}`
     : '';
-  const modeText = `${followMode}${catchUp ? ' catchup' : ''}${cfg().lowKey ? ' lowkey' : ''}${proxyTag(s) ? ' proxy' : ''}${changingTo ? ' pchange' : ''}`;
+  const modeText = `${followMode}${catchUp ? ' catchup' : ''}${cfg().lowKey ? ' lowkey' : ''}${proxyTag(s) ? ' proxy' : ''}${changingTo ? ' pchange' : ''}${innMenu ? ' innmenu' : ''}${single ? ` single ${single.label}${single.done ? ' done' : ''}` : ''}${replay.player(following)?.playing === false && mode === 'replay' ? ' paused' : ''}`;
   setTitle(`Basesmall · ${s.gamePk} · ${mode} · ${s.status} · ${s.teams.away.abbr} ${s.score.away}-${s.score.home} ${s.teams.home.abbr} · ${S.inning(s.inning, s.half)} · ${s.balls}-${s.strikes} ${s.outs}out · ${elapsed(s)} · ${cfg().lowKey ? 'lowkey' : tier} · ${style.id} · ${modeText}${checkText}`);
 }
 
@@ -1373,7 +1393,7 @@ if ('ResizeObserver' in window) {
   }).observe(app);
 }
 
-function replayAction(action: string): void {
+function replayAction(action: string, value?: string): void {
   if (action === 'clock') { setTab('clock', !cfg().tabs.clock); return; }
   if (action === 'replay-tab') { setTab('replay', !cfg().tabs.replay); return; }
   if (action === 'size') { void cycleTier(); return; }
@@ -1394,15 +1414,36 @@ function replayAction(action: string): void {
   const p = replay.player(following);
   if (!p) return;
   if (action === 'toggle') {
+    // After a single half-inning, play on as a normal replay.
+    if (single?.done) single = null;
     if (p.playing) { frozenOffset = performance.now() - deliveredAt; p.pause(); }
     else { deliveredAt = performance.now() - (frozenOffset ?? 0); frozenOffset = null; p.play(); }
   }
   else if (action === 'speed') { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]!; p.setSpeed(speed); }
+  else if (action === 'innings') innMenu = !innMenu;
+  else if (action === 'inning' && value) {
+    innMenu = false;
+    const [n, half] = value.split(':');
+    const h = halfInnings(p.timeline).find((x) => x.inning === Number(n) && x.half === half);
+    single?.stop();
+    const label = `${half === 'top' ? '▲' : '▼'}${n}`;
+    if (!h) single = { label, done: true, missing: true, stop: () => undefined };
+    else {
+      const mine = { label, done: false, missing: false, stop: () => undefined as void };
+      single = mine;
+      deliveredAt = performance.now();
+      frozenOffset = null;
+      mine.stop = playHalfInning(p, h, () => { mine.done = true; renderTabs(store.current); if (shown) setGameTitle(shown); });
+    }
+  }
   else if (action === 'next') {
+    single?.stop();
+    single = null;
     const i = p.timeline.findIndex((e, n) => n > p.position && e.events.some((ev) => ev.type === 'plateAppearance' || ev.type === 'gameEnd'));
     if (i >= 0) p.seek(i); // a snap: state only, its play shows as text
   }
   renderTabs(store.current);
+  if (shown && view === 'game') setGameTitle(shown);
 }
 
 // ---------- input ----------
@@ -1411,6 +1452,7 @@ function onClick(e: MouseEvent): void {
   // Any click is a user gesture: the moment an audio context may start (or wake, if suspended).
   if (!cfg().sound.muted && sounds.state !== 'running') sounds.prime();
   const t = (e.target as HTMLElement).closest('button');
+  if (innMenu && !(e.target as HTMLElement).closest('.innmenu') && t?.dataset.action !== 'innings') { innMenu = false; renderTabs(store.current); }
   if (!t) return;
   const { day, tab, pk, action, pick, value, preview } = t.dataset;
   const close = t.dataset.close;
@@ -1441,7 +1483,7 @@ function onClick(e: MouseEvent): void {
   else if (pk) follow(Number(pk), t.dataset.mode === 'replay' ? 'replay' : 'live');
   else if (action === 'back') void showPicker();
   else if (action === 'choose') showChooser();
-  else if (action) replayAction(action);
+  else if (action) replayAction(action, value);
 }
 app.addEventListener('click', onClick);
 tabsEl.addEventListener('click', onClick);
@@ -1471,7 +1513,8 @@ if (win) {
 
 // Open a game directly: `basesmall --game=<pk> [--mode=replay]` in the app, ?game=<pk>&mode=replay in a browser.
 // Checking aids: --tier=dot|bar|field|full --style=<id> --bg=solid|semi|clear --speed=<n> --seek=<entry>
-// [--paused] --selfcheck --press=<action>,<action> (control buttons, 2 s apart, once loaded) --settings
+// [--paused] --selfcheck --press=<action>,<action> (control buttons, 2 s apart, once loaded; inning=3:top
+// picks a half-inning) --settings
 // --set=<path>:<value>,... (e.g. sound.on:true,notify.mode:both) --picker (the game list instead of home).
 // A checking run saves no settings, unless BASESMALL_CONFIG_DIR points it at a scratch folder.
 /** "follow.seen:2026:PHI" -> ["follow.seen", "2026:PHI"]: only the first colon separates. */
@@ -1529,6 +1572,8 @@ async function start(): Promise<void> {
   // Each press is a control button ("size") or a setting change ("language:en"), 2 s apart.
   const presses = (q.get('press') ?? '').split(',').filter(Boolean);
   presses.forEach((action, i) => setTimeout(() => {
+    // "inning=3:top" picks a half from the inning menu.
+    if (action.startsWith('inning=')) { replayAction('inning', action.slice('inning='.length)); return; }
     if (!action.includes(':')) { replayAction(action); return; }
     const [path, raw] = splitPair(action);
     setPath(path, raw === 'true' ? true : raw === 'false' ? false : raw);

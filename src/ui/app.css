@@ -229,7 +229,7 @@ body.has-tabs #tabs { display: flex; }
 body.has-tabs #app { top: 20px; }
 #tabs .tab { height: 20px; display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 9px; border-radius: 8px 8px 0 0; min-width: 0; overflow: hidden; white-space: nowrap; flex: 0 1 auto;
   border: 1px solid var(--border); border-bottom: 0; font-size: 11px; color: var(--muted); position: relative; top: 1px; }
-/* When the controls squeeze the tabs, the label gives way, not the close button. */
+/* When the window squeezes the tabs, the label gives way, not the close button. */
 #tabs .tab .tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 #tabs.bg-solid .tab { background: var(--background); }
 #tabs.bg-semi .tab { background: color-mix(in srgb, var(--background) 62%, transparent); }
@@ -239,10 +239,18 @@ body.has-tabs #app { top: 20px; }
 #tabs .tab.elsewhere .go { width: auto; height: 18px; padding: 0 6px; opacity: 1; color: var(--accent); font-size: 11px; white-space: nowrap; }
 #tabs .tab button { width: 16px; height: 16px; border-radius: 4px; padding: 0; line-height: 14px; color: var(--muted); opacity: .55; flex: 0 0 16px; }
 #tabs .tab button:hover { opacity: 1; background: var(--border); color: var(--text); }
+/* Single half-inning replay: a column per inning under the tabs, ▲ above ▼. Fits the bar size. */
+#tabs .innmenu { position: absolute; top: 21px; right: 0; z-index: 30; display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, 16px);
+  gap: 2px 3px; padding: 3px 6px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); box-shadow: 0 4px 14px rgb(0 0 0 / .35); }
+#tabs .innmenu span { font-size: 10px; line-height: 16px; text-align: center; color: var(--muted); }
+#tabs .innmenu button { width: 20px; height: 16px; padding: 0; border-radius: 4px; font-size: 9px; line-height: 16px; color: var(--text); }
+#tabs .innmenu button:hover { background: var(--border); }
 
-/* Controls: shown for a moment when a game opens, then on hover. */
-#tabs .controls { display: inline-flex; align-items: flex-end; gap: 1px; height: 20px; padding: 0 3px; border-radius: 8px 8px 0 0; flex: 0 0 auto;
-  border: 1px solid var(--border); border-bottom: 0; position: relative; top: 1px;
+/* Controls: shown for a moment when a game opens, then on hover. Hidden, they take no room, so the
+   tab labels (replay speed, the half-inning played) read in full; shown, they cover the tabs' right
+   end, and the clock and replay buttons among them still close the tabs. */
+#tabs .controls { display: inline-flex; align-items: flex-end; gap: 1px; height: 20px; padding: 0 3px; border-radius: 8px 8px 0 0;
+  border: 1px solid var(--border); border-bottom: 0; position: absolute; right: 0; bottom: -1px;
   opacity: 0; pointer-events: none; transition: opacity .15s; }
 #tabs.bg-solid .controls { background: var(--background); }
 #tabs.bg-semi .controls { background: color-mix(in srgb, var(--background) 62%, transparent); }

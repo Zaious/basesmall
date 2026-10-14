@@ -157,7 +157,8 @@ interface Strings {
     'today' | 'live' | 'later' | 'final' | 'noGames' | 'loading' | 'reconnecting' | 'replay' | 'back' | 'quit' | 'quitAgain' |
     'pickGame' | 'scoresHidden' | 'prevDay' | 'nextDay' | 'loadFailed' |
     'play' | 'pause' | 'speed' | 'nextResult' | 'chooseTeam' | 'chooseTeamHint' | 'noFavorite' | 'favorite' | 'clock' |
-    'size' | 'style' | 'pitcher' | 'batter' | 'todayLine' | 'noPitchData',
+    'size' | 'style' | 'pitcher' | 'batter' | 'todayLine' | 'noPitchData' |
+    'innings' | 'inningsTitle' | 'halfDone' | 'halfMissing',
     string
   >;
 }
@@ -331,6 +332,7 @@ const zh: Strings = {
     chooseTeam: '你的主隊是？', chooseTeamHint: '主隊的比賽會排在最前面，撞色時主隊保留原色。之後可以改。',
     noFavorite: '不指定', favorite: '主隊', clock: '比賽經過時間',
     size: '尺寸（也可以拖曳右下角）', style: '風格', pitcher: '投', batter: '打', todayLine: '今日', noPitchData: '此場無落點資料',
+    innings: '局', inningsTitle: '單局回放：選一個半局，播完就停', halfDone: '播完', halfMissing: '這半局沒打',
   },
 };
 
@@ -495,6 +497,7 @@ const en: Strings = {
     chooseTeam: 'Which team is yours?', chooseTeamHint: 'Its games come first, and it keeps its colour when two teams clash. You can change this later.',
     noFavorite: 'No team', favorite: 'My team', clock: 'Game time',
     size: 'Size (or drag the bottom-right corner)', style: 'Style', pitcher: 'P', batter: 'AB', todayLine: 'Today', noPitchData: 'No pitch locations for this game',
+    innings: 'Inn', inningsTitle: 'Replay one half-inning; it stops at the end', halfDone: 'done', halfMissing: 'not played',
   },
 };
 
