@@ -5,7 +5,7 @@ import { ReplayPlayer } from '../src/data/replay/player.ts';
 import { FakeClock } from './fake-clock.ts';
 import { FIXTURES, hasFixture, loadFixture } from './fixtures.ts';
 
-describe('half-innings of a timeline', () => {
+describe.skipIf(!FIXTURES.some((f) => hasFixture(f.pk)))('half-innings of a timeline', () => {
   it('match the official line score and tile the timeline, every fixture', () => {
     let checked = 0;
     for (const { pk } of FIXTURES.filter((f) => hasFixture(f.pk))) {
