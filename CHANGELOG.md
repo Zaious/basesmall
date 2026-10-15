@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-10-15)
 
 - During a pitching change the score bar (or the bubble on the board) says "Pitching change · <new pitcher>" until the next pitch. The feed is silent while the new pitcher warms up, and a board that did not move for minutes looked stuck.
 - Replay one half-inning. In a replay, the **Inn** button opens a table of half-innings (▲ top, ▼ bottom); pick one and it plays from the first pitch to the third out, then stops. Press ▶ to carry on. Extra innings appear only once the replay reaches them.
