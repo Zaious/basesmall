@@ -6,9 +6,9 @@ A tiny, quiet desktop view of the game you can't watch.
 
 Basesmall is an unofficial desktop companion for following live MLB games. It sits in a corner of your screen and keeps your team's game going as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate, and which way the ball went. Enough to know what is happening at a glance, without video, without sound unless you want it, and without looking like you are watching sports.
 
-![Basesmall following a game: an intentional walk, then a three-run home run](docs/media/demo.gif)
+<img src="docs/media/demo.gif" width="512" alt="Basesmall following a game: an intentional walk, then a three-run home run">
 
-*A replay of the 2026 AL Wild Card Series, Game 2: Boston walks Rice to face Bellinger, who hits a three-run home run.*
+*A replay of the 2026 AL Wild Card Series, Game 2: Boston walks Rice to face Bellinger, who hits a three-run home run. [MP4 version](docs/media/demo.mp4)*
 
 > **Status: first release (v0.1).** Windows is the main platform. macOS and Linux builds are experimental: macOS has been tried on one Intel Mac, Linux not on a real machine yet.
 
