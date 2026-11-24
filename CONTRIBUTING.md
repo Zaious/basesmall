@@ -25,7 +25,7 @@ npm run tauri dev
 
 You need Node 24 and Rust. `node scripts/probe/07-fixtures.mjs` records a few finished games into `fixtures/mlb/` so the full test suite runs; those recordings are never committed.
 
-A few rules the project keeps (the full list, in Chinese, is in [`CLAUDE.md`](CLAUDE.md)):
+A few rules the project keeps (build, test and code style for agents: [`CLAUDE.md`](CLAUDE.md)):
 
 - **Less, not more.** Every feature should make a one-second glance more useful without making the window look more like watching sports. If it adds visual weight, it needs a good reason.
 - **Every feature can be switched off**, with a sensible default.
