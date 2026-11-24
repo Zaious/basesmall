@@ -1,9 +1,9 @@
 # Basesmall
 
-> Basesmall is a free, open-source desktop app that follows live MLB games in a small window that stays on top of your other windows. It draws the game as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate and where the ball went. It is an unofficial fan project, not affiliated with MLB. Windows is the main platform; macOS and Linux builds are experimental.
+> Basesmall is a free, open-source desktop app that follows live MLB games in a small window that stays on top of your other windows. It draws the game as a few abstract pieces: who is on base, the count, the outs, the score, where each pitch crossed the plate and where the ball went. Unofficial fan project. Not sponsored or endorsed by Major League Baseball or any club. Windows is the main platform; macOS and Linux builds are experimental.
 
 - Free, no ads, nothing to pay for. Apache License 2.0. Made by Zaious at ChronicleCore Studio.
-- Runs entirely on the user's computer: no account, no server, no analytics. Game data comes from MLB's public Stats API, for personal, non-commercial use. The app asks GitHub once at start-up whether a newer version exists (can be switched off).
+- Runs entirely on the user's computer: no account, no server, no analytics. Game data comes from the MLB Stats API, fetched directly by the user's own computer; it belongs to MLB Advanced Media and is subject to its copyright notice (http://gdx.mlb.com/components/copyright.txt). The app asks GitHub once at start-up whether a newer version exists (can be switched off).
 - Four sizes, from a pill with the score to a panel with the board, the strike zone, the matchup and the line score.
 - Follows the user's team: the live game when there is one, otherwise a countdown with the probable starters.
 - Replays games from the 2023 season on, without spoilers.
