@@ -84,13 +84,33 @@ jobs:
           else
             echo "update key: not set"
           fi
+      # The release notes are this version's section of CHANGELOG.md, the one source of version notes.
+      # No section, no release: the build stops here rather than publish empty notes.
+      - name: Release notes from CHANGELOG.md
+        id: notes
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          notes=$(awk -v v="$v" 'index($0, "## [" v "] - ") == 1 {f=1; next} f && index($0, "## [") == 1 {exit} f {print}' CHANGELOG.md)
+          if [ -z "$(echo "$notes" | tr -d '[:space:]')" ]; then
+            echo "CHANGELOG.md has no section '## [$v] - YYYY-MM-DD'; add it before tagging." >&2
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<CHANGELOG_EOF"
+            echo "$notes"
+            echo
+            echo "Windows builds are not code-signed; the macOS build is signed and notarised by Apple. macOS and Linux are experimental."
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Basesmall ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md. Windows builds are not code-signed; the macOS build is signed and notarized by Apple. macOS and Linux are experimental.
+          releaseName: Basesmall ${{ steps.notes.outputs.version }}
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json ${{ env.UPDATER_CONFIG }}

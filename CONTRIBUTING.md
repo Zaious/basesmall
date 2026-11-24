@@ -1,6 +1,6 @@
 # Contributing to Basesmall
 
-Thanks for wanting to help. There are four easy ways in, and one bigger one.
+Thanks for wanting to help. There are four easy ways in, and one bigger one. Issues and pull requests in English or Chinese are both fine; opening one needs a free GitHub account. Security problems go through private reporting instead: see [SECURITY.md](SECURITY.md).
 
 ## Team colours
 
@@ -29,8 +29,8 @@ A few rules the project keeps (the full list, in Chinese, is in [`CLAUDE.md`](CL
 
 - **Less, not more.** Every feature should make a one-second glance more useful without making the window look more like watching sports. If it adds visual weight, it needs a good reason.
 - **Every feature can be switched off**, with a sensible default.
-- **The drawing side never sees MLB's JSON.** League data is turned into the normalized model in `src/model/types.ts` first (`src/data/mlb/`), and everything else works from that.
-- **Tests check against the official numbers**, not numbers we computed ourselves. The adapter is tested against MLB's own line score and box score.
+- **The drawing side never sees MLB's JSON.** League data is turned into the normalised model in `src/model/types.ts` first (`src/data/mlb/`), and everything else works from that.
+- **Tests check against the official numbers**, not numbers computed by Basesmall itself. The adapter is tested against MLB's own line score and box score.
 - **Be polite to the data source.** One request at a time, backing off on errors, never committing responses.
 - **No logos or team art**, and no code copied from other projects unless its licence allows it.
 - Code, identifiers and commit messages are in English. The UI is in English and Traditional Chinese: every string lives in `src/i18n/index.ts`.
@@ -45,7 +45,11 @@ Basesmall only covers MLB because, when it was built, no other league had public
 4. **Schedule.** The game list, the scoreboard and following a team read `GameCard`s ([`src/data/mlb/schedule.ts`](src/data/mlb/schedule.ts)). Map the league's schedule to those.
 5. **Colours.** Add a colour table next to `styles/team-colors/mlb.json`.
 
-The board, the strike zone, sounds and notices then work unchanged: they only know the model. Open an issue before starting, so we can agree on the details.
+The board, the strike zone, sounds and notices then work unchanged: they only know the model. Open an issue before starting, so that you and I can agree on the details.
+
+## AI-assisted contributions
+
+You may use AI tools. If a tool produced a substantial part of a change, say so in the pull request; a commit may carry an `Assisted-by: <tool>` line. You need to be able to explain every line you submit, and you answer for it, including the right to contribute it. A `Signed-off-by` line, if you add one, must be added by you, never by a tool.
 
 ## Forks and your own builds
 
